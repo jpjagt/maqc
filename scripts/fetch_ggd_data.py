@@ -20,6 +20,6 @@ for year in years:
     for component in GGD_COMPONENTS:
         filename = year + "_" + component + ".csv"
         url = base_url + "/" + year + "/" + filename
-        response = requests.get(url + filename)
+        response = requests.get(url)
         with open(os.path.join(write_dir, filename), "wb") as f:
             f.write(response.content)
