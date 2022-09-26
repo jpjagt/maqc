@@ -51,12 +51,21 @@ class GGDDataLoader(object):
     def _load_data(self, fpath):
         # tabular data starts on eighth row (headers)
         skiprows = 7 + self._get_skiprows(fpath)
+
         try:
             df = pd.read_csv(
                 fpath, sep=";", encoding="latin-1", skiprows=skiprows
             )
         except FileNotFoundError:
             return None
+
+        df["Begindatumtijd"] = pd.to_datetime(
+            df["Begindatumtijd"], errors="coerce"
+        )
+        df["Einddatumtijd"] = pd.to_datetime(
+            df["Einddatumtijd"], errors="coerce"
+        )
+
         return df
 
     def load(self, year, component):
