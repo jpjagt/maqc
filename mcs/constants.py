@@ -44,18 +44,9 @@ GGD_AMSTERDAM_STATIONS = [
     {"code": "NL10546", "name": "Zaanstad-Hemkade"},
     {"code": "NL49002", "name": "Amsterdam-Haarlemmerweg"},
     {"code": "NL49019", "name": "Amsterdam-Oude Schans"},
-    {
-        "code": "NL49020",
-        "name": "Amsterdam-Jan van Galenstraat",
-    },
-    {
-        "code": "NL49021",
-        "name": "Amsterdam-Kantershof (Zuid Oost)",
-    },
-    {
-        "code": "NL49022",
-        "name": "Amsterdam-Sportpark Ookmeer (Osdorp)",
-    },
+    {"code": "NL49020", "name": "Amsterdam-Jan van Galenstraat"},
+    {"code": "NL49021", "name": "Amsterdam-Kantershof (Zuid Oost)"},
+    {"code": "NL49022", "name": "Amsterdam-Sportpark Ookmeer (Osdorp)"},
     {"code": "NL49546", "name": "Zaanstad-Hemkade"},
     {"code": "NL49703", "name": "Amsterdam-Spaarnwoude"},
     {"code": "NL49704", "name": "Amsterdam-Hoogtij"},
