@@ -1,6 +1,8 @@
+from typing import Any
 from unicodedata import name
 import mcs
 import matplotlib.pyplot as plt
+from mcs.utils import get_ts_df
 import pandas as pd 
 import numpy as np
 from mcs.data_loaders import ggd
@@ -26,27 +28,33 @@ print(df2)
  #Extract station code for corresponding station name 
 df3 = df2.set_index('name', inplace=True)
 
-def getstationcode(name, df):
-     inputid = input(name)
-     try:
-         return df.loc[str(inputid), 'code']
-     except:
-         return 'No such station'
+# # def getstationcode(name, df):
+# #      inputid = input(name)
+# #      try:
+# #          return df.loc[str(inputid), 'code']
+# #      except:
+# #          return 'No such station'
       
-getstationcode('Amsterdam-Vondelpark',df3)
+# # getstationcode('Amsterdam-Vondelpark', df3)
 
-name_index = df.idx['name'==name]
-name_code = df['code'].iloc[name_index]
+# name_index = df.idx['name'==name]
+# name_code = df['code'].iloc[name_index]
 
-#Select date&station to plot
-SV = df.iloc[:,0:6]
-bitmask = (SV['Einddatumtijd'] >= '2021-10-10') & (SV['Einddatumtijd'] < '2021-10-11')
-SV_okt = SV[bitmask]
+# #Select date&station to plot
+# SV = df.iloc[:,0:6]
+# bitmask = (SV['Einddatumtijd'] >= '2021-10-10') & (SV['Einddatumtijd'] < '2021-10-11')
+# SV_okt = SV[bitmask]
 
-print(SV_okt)
+# print(SV_okt)
 
-plt.plot('Einddatumtijd', 'NL01485', data=SV_okt)
+# plt.plot('Einddatumtijd', 'NL01485', data=SV_okt)
+# plt.show()
+
+
+get_ts_df (df)
+
+start_date = "2022-10-10"
+end_date = "2022-10-11"
+station_codes = ['NL49014']
+df.loc[start_date:end_date, station_codes].plot()
 plt.show()
-
-
-
