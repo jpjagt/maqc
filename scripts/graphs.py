@@ -22,11 +22,11 @@ loader = ggd.GGDDataLoader()
 df = loader.load(2021, "PM25")
 df['Einddatumtijd'] =  pd.to_datetime(df['Einddatumtijd'])
 
-# print(GGD_AMSTERDAM_STATIONS)
-df2 = pd.DataFrame(GGD_AMSTERDAM_STATIONS, columns = ['code', 'name']) 
-print(df2)
- #Extract station code for corresponding station name 
-df3 = df2.set_index('name', inplace=True)
+# # print(GGD_AMSTERDAM_STATIONS)
+# df2 = pd.DataFrame(GGD_AMSTERDAM_STATIONS, columns = ['code', 'name']) 
+# print(df2)
+#  #Extract station code for corresponding station name 
+# df3 = df2.set_index('name', inplace=True)
 
 # # def getstationcode(name, df):
 # #      inputid = input(name)
@@ -51,10 +51,22 @@ df3 = df2.set_index('name', inplace=True)
 # plt.show()
 
 
-get_ts_df (df)
+df = get_ts_df(df)
 
-start_date = "2022-10-10"
-end_date = "2022-10-11"
+start_date_1 = "2021-10-10"
+end_date_1 = "2021-10-10"
 station_codes = ['NL49014']
-df.loc[start_date:end_date, station_codes].plot()
+df.loc[start_date_1:end_date_1, station_codes].plot()
+plt.show()
+
+start_date_2 = "2021-10-11"
+end_date_2 = "2021-10-11"
+
+df.loc[start_date_2:end_date_2, station_codes].plot()
+plt.show()
+
+start_date_2 = "2021-10-11"
+end_date_3 = "2021-10-18"
+
+df.loc[start_date_2:end_date_3, station_codes].plot()
 plt.show()
