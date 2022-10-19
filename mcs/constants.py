@@ -3,11 +3,12 @@ from pathlib import Path
 
 ROOT_DIR = Path(config("ROOT_DIR"))
 
-DATA_DIR = ROOT_DIR / "data"
-
 ASSETS_DIR = ROOT_DIR / "mcs" / "assets"
 
+DATA_DIR = ROOT_DIR / "data"
 GGD_DATA_DIR = DATA_DIR / "ggd"
+MIT_DATA_DIR = DATA_DIR / "mit"
+GVB_DATA_DIR = DATA_DIR / "gvb"
 
 GGD_YEARS = list(map(str, range(2012, 2022))) + [
     "2022_01",
@@ -60,3 +61,53 @@ GGD_AMSTERDAM_STATION_CODES = set(
 GGD_AMSTERDAM_STATION_NAMES = set(
     station["name"] for station in GGD_AMSTERDAM_STATIONS
 )
+
+MIT_CSV_HEADERS = [
+    "is_summary",
+    "deviceID",
+    "timestamp",
+    "latitude",
+    "longitude",
+    "PM1",
+    "PM25",
+    "PM10",
+    "bin0",
+    "bin1",
+    "bin2",
+    "bin3",
+    "bin4",
+    "bin5",
+    "bin6",
+    "bin7",
+    "bin8",
+    "bin9",
+    "bin10",
+    "bin11",
+    "bin12",
+    "bin13",
+    "bin14",
+    "bin15",
+    "bin16",
+    "bin17",
+    "bin18",
+    "bin19",
+    "bin20",
+    "bin21",
+    "bin22",
+    "bin23",
+    "flowrate",
+    "countglitch",
+    "laser_status",
+    "temperature_opc",
+    "humidity_opc",
+    "data_is_valid",
+    "temperature",
+    "humidity",
+    "ambient_IR",
+    "object_IR",
+    "gas_op1_w",
+    "gas_op1_r",
+    "gas_op2_w",
+    "gas_op2_r",
+    "noise",
+]

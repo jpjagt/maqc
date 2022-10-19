@@ -1,3 +1,11 @@
+import json
+
+
+def load_json(fpath):
+    with open(fpath) as f:
+        return json.loads(f.read())
+
+
 def get_station_codes_from_columns(columns):
     return [
         col
