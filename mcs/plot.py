@@ -1,8 +1,9 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import geopandas as gpd
+import numpy as np
 
-from mcs.constants import ASSETS_DIR
+from mcs.constants import ASSETS_DIR, BINSIZES
 
 amsterdam_geojson = gpd.read_file(
     str(ASSETS_DIR / "amsterdam_neighbourhoods.geojson")
@@ -22,3 +23,20 @@ def plot_points_lat_lng(df, label_column=None):
             ax.annotate(
                 label, xy=(x, y), xytext=(3, 3), textcoords="offset points"
             )
+
+
+def plot_line(df, variable, yscale="linear", xlabel=None, ylabel=None):
+    fig, ax = plt.subplots()
+
+    x = df.index
+    y = df[variable]
+
+    ax.set_yscale(yscale)
+
+    if xlabel:
+        ax.set_xlabel(xlabel)
+    if ylabel:
+        ax.set_ylabel(ylabel)
+
+    ax.plot(x, y)
+    plt.show()
