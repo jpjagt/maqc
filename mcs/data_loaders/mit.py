@@ -36,6 +36,9 @@ class MITDataLoader(object):
         # it's a UTC timestamp, and we're UTC+2
         df["timestamp"] += pd.DateOffset(hours=2)
 
+        for col in df.columns:
+            if "bin" in col:
+                df[col] = df[col].astype("float")
         return df
 
     def load_data(self, experiment_name, device_name):
