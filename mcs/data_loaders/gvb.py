@@ -55,4 +55,5 @@ class GVBDataLoader(object):
             departures_on_day = weekday2departures[day.day_name().lower()]
             for departure in departures_on_day:
                 departures.append(f"{day.date()} {departure}")
-        return pd.to_datetime(departures, format="%Y-%m-%d %H:%M:%S")
+        departures = pd.to_datetime(departures, format="%Y-%m-%d %H:%M:%S")
+        return departures[(departures > start) & (departures < end)]
