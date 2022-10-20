@@ -1,0 +1,99 @@
+#+TITLE: sensor on Kyra's balcony
+#+BIND: org-export-use-babel nil
+#+AUTHOR: july jagt
+#+EMAIL: <jpjagt@pm.me>
+#+DATE: October 17, 2022
+#+LATEX: \setlength\parindent{0pt}
+#+LATEX_HEADER: \usepackage{minted}
+#+LATEX_HEADER: \usepackage[margin=1.2in]{geometry}
+#+LATEX_HEADER: \usepackage{mathpazo}
+#+LATEX_HEADER: \usepackage{adjustbox}
+#+LATEX_HEADER_EXTRA:  \usepackage{mdframed}
+#+LATEX_HEADER_EXTRA: \BeforeBeginEnvironment{minted}{\begin{mdframed}}
+#+LATEX_HEADER_EXTRA: \AfterEndEnvironment{minted}{\end{mdframed}}
+#+LATEX_HEADER_EXTRA: \BeforeBeginEnvironment{tabular}{\begin{adjustbox}{center}}
+#+LATEX_HEADER_EXTRA: \AfterEndEnvironment{tabular}{\end{adjustbox}}
+#+MACRO: NEWLINE @@latex:\\@@ @@html:<br>@@
+#+PROPERTY: header-args :exports both :session kyra-balcony :cache :results value
+#+OPTIONS: ^:nil
+#+LATEX_COMPILER: pdflatex
+#+SETUPFILE: https://fniessen.github.io/org-html-themes/org/theme-readtheorg.setup
+
+#+BEGIN_NOTE
+Preliminary note: this data has not yet been calibrated against a reference
+station, so the absolute values measured are not guaranteed to be accurate.
+#+END_NOTE
+
+* loading the data
+
+#+BEGIN_SRC python :session kyra-balcony
+from mcs.data_loaders import MITDataLoader, GVBDataLoader
+import pandas as pd
+
+sensor_df = MITDataLoader().load_data("kyra-balcony", "w4-nyc-02")
+sensor_df = sensor_df.set_index('timestamp').sort_index()
+start, end = sensor_df.index.min(), sensor_df.index.max()
+
+gvb_departures_away = GVBDataLoader().load_departures_in_range(
+    "hdvries-away-2022", start, end
+)
+gvb_departures_return = GVBDataLoader().load_departures_in_range(
+    "hdvries-return-2022", start, end
+)
+
+gvb_departures = pd.concat(
+    [pd.Series(gvb_departures_away), pd.Series(gvb_departures_return)]
+)
+gvb_departures = gvb_departures[(gvb_departures > start) & (gvb_departures < end)]
+#+END_SRC
+
+* plotting components against tram departures
+
+let's begin with a simple plot, where we visualize the measured components
+against tram departures
+
+#+BEGIN_SRC python :session kyra-balcony
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def plot_component(component, window=40):
+    plt.close("all")
+    plt.figure()
+    ax = plt.gca()
+    ax.vlines(
+        x=gvb_departures_away.values,
+        ymin=sensor_df[component].min(),
+        ymax=sensor_df[component].max(),
+        colors="purple",
+        alpha=0.5,
+        label="departure time of tram (away)",
+    )
+    ax.vlines(
+        x=gvb_departures_return.values,
+        ymin=sensor_df[component].min(),
+        ymax=sensor_df[component].max(),
+        colors="green",
+        alpha=0.5,
+        label="departure time of tram (return)",
+    )
+    ax.plot(
+        sensor_df.index,
+        sensor_df[component].interpolate().values,
+        alpha=0.2,
+        c="orange",
+    )
+    ax.plot(
+        sensor_df.index,
+        sensor_df[component].rolling(window=window).mean().values,
+        c="orange",
+        label=f"{component} (rolling mean, window={window})",
+    )
+    plt.legend()
+    plt.title(f"{component} and nearby tram stop departure times")
+#+END_SRC
+
+#+BEGIN_SRC python :session kyra-balcony
+plot_component("PM25")
+plt.show()
+#+END_SRC

@@ -1,0 +1,74 @@
+#+TITLE: exploration of the GGD data
+#+BIND: org-export-use-babel nil
+#+AUTHOR: july jagt
+#+EMAIL: <jpjagt@pm.me>
+#+DATE: September 22, 2022
+#+LATEX: \setlength\parindent{0pt}
+#+LATEX_HEADER: \usepackage{minted}
+#+LATEX_HEADER: \usepackage[margin=1.2in]{geometry}
+#+LATEX_HEADER: \usepackage{mathpazo}
+#+LATEX_HEADER: \usepackage{adjustbox}
+#+LATEX_HEADER_EXTRA:  \usepackage{mdframed}
+#+LATEX_HEADER_EXTRA: \BeforeBeginEnvironment{minted}{\begin{mdframed}}
+#+LATEX_HEADER_EXTRA: \AfterEndEnvironment{minted}{\end{mdframed}}
+#+LATEX_HEADER_EXTRA: \BeforeBeginEnvironment{tabular}{\begin{adjustbox}{center}}
+#+LATEX_HEADER_EXTRA: \AfterEndEnvironment{tabular}{\end{adjustbox}}
+#+MACRO: NEWLINE @@latex:\\@@ @@html:<br>@@
+#+PROPERTY: header-args :exports both :session ggd-exploration :cache :results value
+#+OPTIONS: ^:nil
+#+LATEX_COMPILER: pdflatex
+
+let's explore the data of the GGD stations.
+
+* setup :noexport:
+
+#+BEGIN_SRC emacs-lisp :session ggd-exploration
+(venv-workon "/Users/jeroen/.virtualenvs/mcs/bin/activate")
+#+END_SRC
+
+* in general
+
+this data has been downloaded from the RIVM, at the following URL:
+https://data.rivm.nl/data/luchtmeetnet/. it contains measurement data from 2012
+onwards, up till august 2022, from stations across the country, for the
+following components:
+
+#+BEGIN_EXAMPLE
+BC, CO, H2S, NH3, NO, NO2, NOx, O3, PM10, PM25, SO2
+#+END_EXAMPLE
+
+all of the stations which are in Amsterdam are prefixed with "Amsterdam-", with
+the addition of one station named "Zaanstad-Hemweg", which is in the west part
+of Amsterdam (Westelijk Havengebied). these are sixteen in total, with the
+following names and station codes:
+
+#+BEGIN_SRC python :session ggd-exploration
+from mcs.constants import GGD_AMSTERDAM_STATIONS
+import pandas as pd
+
+df = pd.DataFrame(GGD_AMSTERDAM_STATIONS)
+
+df
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+       code                                  name
+0   NL49003           Amsterdam-Nieuwendammerdijk
+1   NL49007                 Amsterdam-Einsteinweg
+2   NL49012            Amsterdam-Van Diemenstraat
+3   NL49014                  Amsterdam-Vondelpark
+4   NL49017             Amsterdam-Stadhouderskade
+5   NL10520                   Amsterdam-Florapark
+6   NL10546                      Zaanstad-Hemkade
+7   NL49002               Amsterdam-Haarlemmerweg
+8   NL49019                 Amsterdam-Oude Schans
+9   NL49020         Amsterdam-Jan van Galenstraat
+10  NL49021      Amsterdam-Kantershof (Zuid Oost)
+11  NL49022  Amsterdam-Sportpark Ookmeer (Osdorp)
+12  NL49546                      Zaanstad-Hemkade
+13  NL49703                 Amsterdam-Spaarnwoude
+14  NL49704                     Amsterdam-Hoogtij
+15  NL10545                    Amsterdam-A10 west
+16  NL49016                  Amsterdam-Westerpark
+#+end_example

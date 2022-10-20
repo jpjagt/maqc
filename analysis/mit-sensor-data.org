@@ -1,0 +1,182 @@
+#+TITLE: mit-sensor-data
+#+BIND: org-export-use-babel nil
+#+AUTHOR: jeroen jagt
+#+EMAIL: <jpjagt@pm.me>
+#+DATE: September 29, 2022
+#+LATEX: \setlength\parindent{0pt}
+#+LATEX_HEADER: \usepackage{minted}
+#+LATEX_HEADER: \usepackage[margin=1.2in]{geometry}
+#+LATEX_HEADER: \usepackage{mathpazo}
+#+LATEX_HEADER: \usepackage{adjustbox}
+#+LATEX_HEADER_EXTRA:  \usepackage{mdframed}
+#+LATEX_HEADER_EXTRA: \BeforeBeginEnvironment{minted}{\begin{mdframed}}
+#+LATEX_HEADER_EXTRA: \AfterEndEnvironment{minted}{\end{mdframed}}
+#+LATEX_HEADER_EXTRA: \BeforeBeginEnvironment{tabular}{\begin{adjustbox}{center}}
+#+LATEX_HEADER_EXTRA: \AfterEndEnvironment{tabular}{\end{adjustbox}}
+#+MACRO: NEWLINE @@latex:\\@@ @@html:<br>@@
+#+PROPERTY: header-args :exports both :session mit-sensor-data :cache :results value
+#+OPTIONS: ^:nil
+#+LATEX_COMPILER: pdflatex
+
+* reading the data
+
+#+BEGIN_SRC python :session mit-sensor-data
+import pandas as pd
+import matplotlib.pyplot as plt
+
+from mcs.constants import DATA_DIR
+
+test_outside = False
+
+
+def read(fpath):
+    try:
+        return pd.read_csv(fpath, header=None)
+    except pd.errors.ParserError:
+        return pd.read_csv(fpath, header=None, skiprows=1)
+
+
+if test_outside:
+    df = read(str(DATA_DIR / "mit/w4-nyc-02/test-ams-29-09.csv"))
+else:
+    fpaths = list(
+        (DATA_DIR / "mit/w4-nyc-02/test-ams-29-09-inside").glob("*.CSV")
+    )
+    dfs = [read(fpath) for fpath in fpaths]
+    df = pd.concat(dfs)
+#+END_SRC
+
+#+RESULTS:
+: None
+
+** filtering out overview rows
+
+#+BEGIN_SRC python :session mit-sensor-data
+df = df[df[0] == 0]
+#+END_SRC
+
+** what's the timestamp column?
+
+the second column is the timestamp column, in seconds. let's convert it:
+
+#+BEGIN_SRC python :session mit-sensor-data
+df['timestamp'] = pd.to_datetime(df[2], unit="s")
+
+# it seems to be UTC data and we're UTC+2
+df.timestamp = df.timestamp + pd.DateOffset(hours=2)
+#+END_SRC
+
+** consistency of the timestamp
+
+let's double check whether the timestamp is fully consistent:
+
+#+BEGIN_SRC python :session mit-sensor-data
+pd.infer_freq(df.timestamp)
+#+END_SRC
+
+okay, it's 5S and seems to be consistent. so we should make a daterange index
+with 5S freq once we properly import the data.
+
+* checking with manual timestamps
+
+we recorded this data in the following periods:
+
+#+BEGIN_EXAMPLE
+12:05:00 - 12:10:00
+
+12:10:10 - 12:10:20
+12:10:30 - 12:10:40
+12:10:50 - 12:11:00
+12:12:03 - 12:12:13
+
+12:29:00 - 12:31:00
+12:33:00 - 12:35:35
+12:37:00 - 12:38:20
+#+END_EXAMPLE
+
+let's check this data against the timestamps which are present in the df.
+
+#+BEGIN_SRC python :session mit-sensor-data
+start = df.timestamp.min() + pd.DateOffset(minutes=-5)
+end = df.timestamp.max() + pd.DateOffset(minutes=5)
+
+manual_times = """
+12:05:00 - 12:10:00
+
+12:10:10 - 12:10:20
+12:10:30 - 12:10:40
+12:10:50 - 12:11:00
+12:12:03 - 12:12:13
+
+12:29:00 - 12:31:00
+12:33:00 - 12:35:35
+12:37:00 - 12:38:20
+"""
+
+manual_start__end = [
+    start__end.strip().split(" - ")
+    for start__end in manual_times.split("\n")
+    if len(start__end) > 0
+]
+
+df_times = pd.DataFrame(
+    index=pd.date_range(start, end, freq="S"), columns=["manual", "sensor"]
+)
+df_times["manual"] = False
+df_times["sensor"] = False
+
+for start, end in manual_start__end:
+    start_dt = f"2022-09-29 {start}"
+    end_dt = f"2022-09-29 {end}"
+    df_times.loc[start_dt:end_dt, "manual"] = True
+
+df_times.loc[df.timestamp, "sensor"] = True
+
+df_times.astype(int).plot(alpha=0.5)
+plt.show()
+#+END_SRC
+
+really great, because there's mainly overlap. the period in which the sensor
+was turned on, but without corresponding manual registration makes sense,
+because i did notice that the sensor was on by accident around that time.
+
+it looks like the sensor needs about 35 seconds to boot up.
+
+* latitude and longitude
+
+column 3 and 4 are latitude and longitude.
+
+#+BEGIN_SRC python
+n_missing_values = (
+    pd.isna(df[3])
+    | df[3].between(-0.05, 0.05)
+    | pd.isna(df[4])
+    | df[4].between(-0.05, 0.05)
+).sum()
+
+n_missing_values
+#+END_SRC
+
+awesome! every latitude and longitude value makes some sense. let's check the
+variance:
+
+#+BEGIN_SRC python :session mit-sensor-data
+df[[3, 4]].var()
+#+END_SRC
+
+#+RESULTS:
+: 3    1.960805e-08
+: 4    2.155603e-07
+: dtype: float64
+
+super low. nice. what about the location?
+
+#+BEGIN_SRC python
+df[[3, 4]].mean()
+#+END_SRC
+
+if we enter this location into google maps, we get exactly the location where
+we recorded. great!
+
+#+DOWNLOADED: screenshot @ 2022-09-29 14:55:43
+[[file:latitude_and_longitude/2022-09-29_14-55-43_screenshot.png]]

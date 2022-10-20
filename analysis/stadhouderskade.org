@@ -1,0 +1,142 @@
+#+TITLE: stadhouderskade
+#+BIND: org-export-use-babel nil
+#+AUTHOR: jeroen jagt
+#+EMAIL: <jpjagt@pm.me>
+#+DATE: October 13, 2022
+#+LATEX: \setlength\parindent{0pt}
+#+LATEX_HEADER: \usepackage{minted}
+#+LATEX_HEADER: \usepackage[margin=1.2in]{geometry}
+#+LATEX_HEADER: \usepackage{mathpazo}
+#+LATEX_HEADER: \usepackage{adjustbox}
+#+LATEX_HEADER_EXTRA:  \usepackage{mdframed}
+#+LATEX_HEADER_EXTRA: \BeforeBeginEnvironment{minted}{\begin{mdframed}}
+#+LATEX_HEADER_EXTRA: \AfterEndEnvironment{minted}{\end{mdframed}}
+#+LATEX_HEADER_EXTRA: \BeforeBeginEnvironment{tabular}{\begin{adjustbox}{center}}
+#+LATEX_HEADER_EXTRA: \AfterEndEnvironment{tabular}{\end{adjustbox}}
+#+MACRO: NEWLINE @@latex:\\@@ @@html:<br>@@
+#+PROPERTY: header-args :exports both :session stadhouderskade :cache :results value
+#+OPTIONS: ^:nil
+#+LATEX_COMPILER: pdflatex
+
+we want to do some analysis on the Stadhouderskade GGD station, because we
+realized it's next to the renovation of the DNB HQ.
+
+#+BEGIN_SRC python :session stadhouderskade
+from mcs.data_loaders import GGDDataLoader
+from mcs import utils
+import matplotlib.pyplot as plt
+#+END_SRC
+
+let's check which station code corresponds to the stadhouderskade station.
+
+#+BEGIN_SRC python :session stadhouderskade :results value
+station_metadata_df = GGDDataLoader().load_all_station_metadata()
+stadhouderskade_station_code = station_metadata_df[
+    station_metadata_df.Stationsnaam == "Amsterdam-Stadhouderskade"
+].index[0]
+
+station_code2station_label = (
+    station_metadata_df.Stationsnaam + " (" + station_metadata_df.index + ")"
+)
+
+stadhouderskade_station_code
+#+END_SRC
+
+#+RESULTS:
+: NL49017
+
+okay, so we know the station code to compare to other stations.
+
+let's write a function which, for a component, plots one station versus other stations
+
+#+BEGIN_SRC python :session stadhouderskade
+def get_one_station_vs_others(
+    component, station_code, resample_to, exclude_stations=[]
+):
+    df = GGDDataLoader().load_all(component)
+    station_label = station_code2station_label[station_code]
+    df_resampled = utils.get_ts_df(df, resample_to=resample_to)
+    df_resampled = df_resampled.loc["2019":"2022", :].rename(
+        columns=station_code2station_label
+    )
+
+    other_stations = list(
+        set(df_resampled.columns)
+        - {station_label}
+        - set(
+            [
+                station_code2station_label[station]
+                for station in exclude_stations
+            ]
+        )
+    )
+
+    df_resampled["other_stations_mean"] = df_resampled[other_stations].mean(
+        axis=1
+    )
+    df_resampled["other_stations_std"] = df_resampled[other_stations].std(
+        axis=1
+    )
+    plt.figure()
+    ax = plt.gca()
+    ax.fill_between(
+        df_resampled.index,
+        df_resampled.other_stations_mean - df_resampled.other_stations_std,
+        df_resampled.other_stations_mean + df_resampled.other_stations_std,
+        color="orange",
+        alpha=0.3,
+        label="other stations std",
+    )
+
+    df_resampled[[station_label, "other_stations_mean"]].plot(ax=ax)
+    df_resampled[other_stations].plot(ax=ax, alpha=0.4)
+    plt.legend()
+    plt.title(
+        f"{component} for {station_label} vs others ({resample_to} freq)"
+    )
+#+END_SRC
+
+let's try it for PM2.5:
+
+#+BEGIN_SRC python :session stadhouderskade
+get_one_station_vs_others("PM25", stadhouderskade_station_code, resample_to="14D")
+plt.show()
+#+END_SRC
+
+#+BEGIN_SRC python :session stadhouderskade
+get_one_station_vs_others("NO2", stadhouderskade_station_code, resample_to="14D")
+plt.show()
+#+END_SRC
+
+hmm, we see that some stations seem to be erroneous. let's identify which ones
+they are:
+
+#+BEGIN_SRC python :session stadhouderskade
+def find_constant_stations(component):
+    df = GGDDataLoader().load_all(component)
+    df = utils.get_ts_df(df)
+    df = df.loc["2019":"2022", :]
+    constant_stations = df.columns[df.std() < 0.01]
+    return list(set(constant_stations))
+#+END_SRC
+
+#+BEGIN_SRC python :session stadhouderskade
+no2_constant_stations = find_constant_stations("NO2")
+no2_constant_stations
+#+END_SRC
+
+#+RESULTS:
+| NL10546 | NL10520 |
+
+okay, we'll modify the above plotting function so we can pass stations to
+exclude, and run it again:
+
+#+BEGIN_SRC python :session stadhouderskade
+get_one_station_vs_others(
+    "NO2",
+    stadhouderskade_station_code,
+    resample_to="14D",
+    exclude_stations=no2_constant_stations,
+)
+plt.show()
+#+END_SRC
