@@ -1,32 +1,3 @@
-#+TITLE: sensor on Kyra's balcony
-#+BIND: org-export-use-babel nil
-#+AUTHOR: july jagt
-#+EMAIL: <jpjagt@pm.me>
-#+DATE: October 17, 2022
-#+LATEX: \setlength\parindent{0pt}
-#+LATEX_HEADER: \usepackage{minted}
-#+LATEX_HEADER: \usepackage[margin=1.2in]{geometry}
-#+LATEX_HEADER: \usepackage{mathpazo}
-#+LATEX_HEADER: \usepackage{adjustbox}
-#+LATEX_HEADER_EXTRA:  \usepackage{mdframed}
-#+LATEX_HEADER_EXTRA: \BeforeBeginEnvironment{minted}{\begin{mdframed}}
-#+LATEX_HEADER_EXTRA: \AfterEndEnvironment{minted}{\end{mdframed}}
-#+LATEX_HEADER_EXTRA: \BeforeBeginEnvironment{tabular}{\begin{adjustbox}{center}}
-#+LATEX_HEADER_EXTRA: \AfterEndEnvironment{tabular}{\end{adjustbox}}
-#+MACRO: NEWLINE @@latex:\\@@ @@html:<br>@@
-#+PROPERTY: header-args:python :exports both :session kyra-balcony :cache :results value
-#+OPTIONS: ^:nil
-#+LATEX_COMPILER: pdflatex
-#+SETUPFILE: https://fniessen.github.io/org-html-themes/org/theme-readtheorg.setup
-
-#+BEGIN_NOTE
-Preliminary note: this data has not yet been calibrated against a reference
-station, so the absolute values measured are not guaranteed to be accurate.
-#+END_NOTE
-
-* loading the data :noexport:
-
-#+BEGIN_SRC python :session kyra-balcony :tangle kyra_balcony.py
 from mcs.data_loaders import MITDataLoader, GVBDataLoader
 import pandas as pd
 
@@ -47,16 +18,7 @@ gvb_departures = pd.concat(
     [pd.Series(gvb_departures_away), pd.Series(gvb_departures_return)]
 )
 gvb_departures = gvb_departures[(gvb_departures > start) & (gvb_departures < end)]
-#+END_SRC
 
-#+RESULTS:
-
-* plotting components against tram departures
-
-Let's begin with a simple plot, where we visualize the measured components
-against tram departures
-
-#+BEGIN_SRC python :session kyra-balcony :tangle kyra_balcony.py
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import numpy as np
@@ -114,25 +76,10 @@ def plot_components(
         )
     plt.legend()
     plt.title(f"{', '.join(components)} and nearby tram stop departure times")
-#+END_SRC
 
-#+RESULTS:
-
-#+BEGIN_SRC python :session kyra-balcony :tangle kyra_balcony.py
 plot_components(["PM25", "PM10"])
 plt.show()
-#+END_SRC
 
-#+RESULTS:
-: None
-
-We can see that the only time for which we have a large sequence of
-measurements available is on the 30th of October; from about 10:30 till 20:30,
-specifically. Let's focus on that time window.
-
-* October 30th
-
-#+BEGIN_SRC python :session kyra-balcony :tangle kyra_balcony.py
 o30_start = "2022-09-30 10:30"
 o30_end = "2022-09-30 20:30"
 
@@ -148,8 +95,8 @@ gvb_departures_return_o30 = gvb_departures_return[
 def plot_components_o30(components, *args, **kwargs):
     plot_components(
         components,
-        ,*args,
-        ,**kwargs,
+        *args,
+        **kwargs,
         sensor_df=sensor_df_o30,
         gvb_departures_away=gvb_departures_away_o30,
         gvb_departures_return=gvb_departures_return_o30,
@@ -161,25 +108,12 @@ def plot_components_o30(components, *args, **kwargs):
     plt.title(
         f"{', '.join(components)} and nearby tram stop departure times on Oct 30th"
     )
-#+END_SRC
 
-#+BEGIN_SRC python :session kyra-balcony :tangle kyra_balcony.py
 plot_components_o30(["PM10", "PM25"])
 ax = plt.gca()
 ax.set_ylabel("concentration (µg/m³)")
 plt.show()
-#+END_SRC
 
-This gives us somewhat of an idea of the PM levels compared to the tram
-departure times, but we should analyze this more rigorously. Specifically, we
-want to check if PM levels increase quickly after a tram comes by.
-
-** tram times
-
-we see that the departures of the away direction are often quite close to the
-return direction.
-
-#+BEGIN_SRC python :session kyra-balcony :tangle kyra_balcony.py
 from scipy.spatial import distance
 
 
@@ -202,18 +136,7 @@ print(
     ((min_distances < 180).mean().round(2) * 100),
     "%",
 )
-#+END_SRC
 
-so we see that most trams (87%) depart within 3 minutes of each other; at least
-on october 30th.
-
-this means that we cannot simply compare the time before vs after any tram departure to
-after it, because for most of the 'return' departures, there will be an 'away'
-departure right before.
-
-*** averaging levels around departures
-
-#+BEGIN_SRC python :session kyra-balcony :tangle kyra_balcony.py
 from string import Template
 
 
@@ -319,17 +242,16 @@ def plot_avg(df, center, departure_name, date_name, departure_vline_color):
 
 
 plot_avg(
-    ,*get_average(gvb_departures_away_o30, sensor_df, ["PM25", "PM10"]),
+    *get_average(gvb_departures_away_o30, sensor_df, ["PM25", "PM10"]),
     "away",
     "on Oct 30th",
     "purple",
 )
 plt.show()
 plot_avg(
-    ,*get_average(gvb_departures_return_o30, sensor_df, ["PM25", "PM10"]),
+    *get_average(gvb_departures_return_o30, sensor_df, ["PM25", "PM10"]),
     "return",
     "on Oct 30th",
     "green",
 )
 plt.show()
-#+END_SRC
