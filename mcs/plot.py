@@ -26,10 +26,13 @@ def plot_points_lat_lng(df, label_column=None):
 
 
 def plot_line(df, variable, yscale="linear", xlabel=None, ylabel=None):
+    if type(df) == pd.DataFrame:
+        df = [df]
+
     fig, ax = plt.subplots()
 
-    x = df.index
-    y = df[variable]
+    for item in df:
+        ax.plot(item.index, item[variable])
 
     ax.set_yscale(yscale)
 
@@ -38,5 +41,4 @@ def plot_line(df, variable, yscale="linear", xlabel=None, ylabel=None):
     if ylabel:
         ax.set_ylabel(ylabel)
 
-    ax.plot(x, y)
     plt.show()
