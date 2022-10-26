@@ -9,7 +9,9 @@ DATA_DIR = ROOT_DIR / "data"
 GGD_DATA_DIR = DATA_DIR / "ggd"
 MIT_DATA_DIR = DATA_DIR / "mit"
 GVB_DATA_DIR = DATA_DIR / "gvb"
+KNMI_DATA_DIR = DATA_DIR / "knmi"
 
+KNMI_START_DATE = '2021-01-01'
 GGD_YEARS = list(map(str, range(2012, 2022))) + [
     "2022_01",
     "2022_02",
