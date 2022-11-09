@@ -4,7 +4,7 @@ import pandas as pd
 COLORS = ["orange", "dodgerblue", "firebrick"]
 
 sensor_df = MITDataLoader().load_data("kyra-balcony", "w4-nyc-02")
-sensor_df = sensor_df.set_index('timestamp').sort_index().asfreq("5S")
+sensor_df = sensor_df.set_index("timestamp").sort_index().asfreq("5S")
 start, end = sensor_df.index.min(), sensor_df.index.max()
 
 gvb_departures_away = GVBDataLoader().load_departures_in_range(
@@ -17,7 +17,9 @@ gvb_departures_return = GVBDataLoader().load_departures_in_range(
 gvb_departures = pd.concat(
     [pd.Series(gvb_departures_away), pd.Series(gvb_departures_return)]
 )
-gvb_departures = gvb_departures[(gvb_departures > start) & (gvb_departures < end)]
+gvb_departures = gvb_departures[
+    (gvb_departures > start) & (gvb_departures < end)
+]
 
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
@@ -34,7 +36,9 @@ def plot_components(
     if not isinstance(components, (list, tuple)):
         components = [components]
 
-    all_vals = sensor_df[components].values[~sensor_df[components].isna().values]
+    all_vals = sensor_df[components].values[
+        ~sensor_df[components].isna().values
+    ]
     ymin, ymax = (
         np.percentile(all_vals, 1),
         np.percentile(all_vals, 99),
@@ -77,6 +81,7 @@ def plot_components(
     plt.legend()
     plt.title(f"{', '.join(components)} and nearby tram stop departure times")
 
+
 plot_components(["PM25", "PM10"])
 plt.show()
 
@@ -109,6 +114,7 @@ def plot_components_o30(components, *args, **kwargs):
         f"{', '.join(components)} and nearby tram stop departure times on Oct 30th"
     )
 
+
 plot_components_o30(["PM10", "PM25"])
 ax = plt.gca()
 ax.set_ylabel("concentration (µg/m³)")
@@ -118,7 +124,9 @@ from scipy.spatial import distance
 
 
 def departures_to_coords(departures):
-    return [(val, 0) for val in (departures.astype(np.int64) // 10 ** 9).values]
+    return [
+        (val, 0) for val in (departures.astype(np.int64) // 10 ** 9).values
+    ]
 
 
 min_distances_seconds = distance.cdist(
@@ -199,7 +207,9 @@ def plot_avg(df, center, departure_name, date_name, departure_vline_color):
     plt.ylim(0, ymax)
     for i, component in enumerate(set(df.columns.get_level_values(0))):
         color = COLORS[i]
-        df.loc[:, (component, "mean")].plot(ax=ax, color=color, label=f"{component} (mean)")
+        df.loc[:, (component, "mean")].plot(
+            ax=ax, color=color, label=f"{component} (mean)"
+        )
         ax.fill_between(
             df.index,
             (df[(component, "mean")] - df[(component, "std")]),
