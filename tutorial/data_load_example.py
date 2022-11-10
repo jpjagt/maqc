@@ -1,15 +1,10 @@
 import mcs
-from mcs.data_loaders import ggd
-from mcs import plot
-from mcs.constants import (
-    GGD_DATA_DIR,
-    GGD_YEARS,
-    GGD_COMPONENTS,
-    GGD_AMSTERDAM_STATION_NAMES,
-    GGD_AMSTERDAM_STATION_CODES,
-)
 
-loader = ggd.GGDDataLoader()
+from mcs.data_loaders import sniffer
+import os
 
-df = loader.load(2017, "CO")
-print(df)
+
+loader = sniffer.SNIFFERdataloader()
+df = loader.load_data('snifferdata')
+df.shape
+df.head(10)
