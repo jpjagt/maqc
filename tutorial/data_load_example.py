@@ -1,7 +1,6 @@
 import mcs
 
 from mcs.data_loaders import sniffer
-import os
 
 
 loader = sniffer.SNIFFERdataloader()
