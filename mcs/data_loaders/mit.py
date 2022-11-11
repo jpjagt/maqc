@@ -33,12 +33,19 @@ class MITDataLoader(object):
         # and later
         df = df[df["timestamp"].dt.year > 2021]
 
-        # it's a UTC timestamp, and we're UTC+2
-        df["timestamp"] += pd.DateOffset(hours=2)
+        # it's a UTC timestamp, and we're UTC+1
+        df["timestamp"] += pd.DateOffset(hours=1)
 
         for col in df.columns:
             if "bin" in col:
                 df[col] = df[col].astype("float")
+
+        # TODO:
+        # - humidity normalization (or filtering)
+        # - zeroed out column
+        # - if all values are the same in a row
+        # - check sanjana's data cleaning script for more
+
         return df
 
     def load_data(self, experiment_name, device_name):
