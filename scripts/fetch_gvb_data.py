@@ -11,7 +11,7 @@ dataset_name2url = {
 def fetch_data(name, url):
     data = requests.get(url).json()
 
-    GVB_DATA_DIR.mkdir(exist_ok=True)
+    KNMI_DATA_DIR.mkdir(exist_ok=True)
     fpath = GVB_DATA_DIR / f"{name}.json"
 
     with open(fpath, "w") as f:

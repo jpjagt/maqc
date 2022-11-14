@@ -36,3 +36,16 @@ def get_ts_df(df, ts_col="Begindatumtijd", resample_to=None):
         ts_df = ts_df.resample(resample_to).mean()
 
     return ts_df
+
+def get_ts_dfknmi(df, ts_col="timestamp", resample_to=None):
+    # set the ts col
+    ts_df = df.set_index(ts_col).asfreq("30s")
+    # make sure the data is chronological
+    ts_df = ts_df.sort_index()
+    # remove duplicate timestamps
+    ts_df = ts_df[~ts_df.index.duplicated()]
+    ts_df = ts_df.ffill()
+    if resample_to:
+        ts_df = ts_df.resample(resample_to).mean()
+
+    return ts_df

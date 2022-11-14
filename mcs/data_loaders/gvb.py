@@ -1,5 +1,4 @@
 import pandas as pd
-
 from mcs.constants import GVB_DATA_DIR
 from mcs.utils import load_json
 
