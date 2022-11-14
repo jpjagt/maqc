@@ -1,7 +1,6 @@
 import pandas as pd
 import time
 import tkinter as tk
-from tkVideoPlayer import TkinterVideo
 
 from mcs.constants import DATA_DIR
 
