@@ -38,13 +38,6 @@ class Window(tk.Tk):
 
         self.bind("<Key>", self._pressed_key)
 
-    def _get_current_image_timestamp(self):
-        start_date = pd.to_datetime("2022-11-15 12:00:00")
-        current_img_timestamp = start_date + TimeDelta(
-            seconds=self.img_index * self.image_freq
-        )
-        return current_img_timestamp
-
     def _display_image(self, img_timestamp):
         img_timestamp_str = img_timestamp.strftime("%Y-%m-%d-%H:%M:%S")
         fpath = CAMERA_IMAGES_DIR / f"{img_timestamp}.jpg"
