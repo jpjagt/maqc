@@ -12,7 +12,7 @@ GVB_DATA_DIR = DATA_DIR / "gvb"
 KNMI_DATA_DIR = DATA_DIR / "knmi"
 SNIFFER_DATA_DIR = DATA_DIR / "sniffer"
 
-KNMI_START_DATE = '2021-01-01'
+KNMI_START_DATE = '2021-11-01'
 GGD_YEARS = list(map(str, range(2012, 2022))) + [
     "2022_01",
     "2022_02",

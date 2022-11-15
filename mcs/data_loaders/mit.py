@@ -1,5 +1,5 @@
 import pandas as pd
-
+import datetime as dt
 from mcs.constants import MIT_DATA_DIR, MIT_CSV_HEADERS
 
 
@@ -29,12 +29,18 @@ class MITDataLoader(object):
 
         df["timestamp"] = pd.to_datetime(df["timestamp"], unit="s")
 
+        #round to the nearest 5 seconds
+        #df["timestamp"].dt.round('5s')
+
         # some timestamps might be from 1999; we only want data from this year
         # and later
         df = df[df["timestamp"].dt.year > 2021]
 
         # it's a UTC timestamp, and we're UTC+1
         df["timestamp"] += pd.DateOffset(hours=1)
+
+        df = df.set_index('timestamp').sort_index()
+
 
         for col in df.columns:
             if "bin" in col:

@@ -1,4 +1,3 @@
-from lib2to3.pgen2.pgen import DFAState
 from typing import Any
 from unicodedata import name
 import mcs
@@ -19,40 +18,55 @@ from mcs.constants import (
 
 loader = ggd.GGDDataLoader()
 
-# #Load relevant data for plots
+#Load relevant data for plots
 df = loader.load(2021, "PM25")
 df['Einddatumtijd'] =  pd.to_datetime(df['Einddatumtijd'])
-df.head(10)
+
+# # print(GGD_AMSTERDAM_STATIONS)
+# df2 = pd.DataFrame(GGD_AMSTERDAM_STATIONS, columns = ['code', 'name']) 
+# print(df2)
+#  #Extract station code for corresponding station name 
+# df3 = df2.set_index('name', inplace=True)
+
+# # def getstationcode(name, df):
+# #      inputid = input(name)
+# #      try:
+# #          return df.loc[str(inputid), 'code']
+# #      except:
+# #          return 'No such station'
+      
+# # getstationcode('Amsterdam-Vondelpark', df3)
+
+# name_index = df.idx['name'==name]
+# name_code = df['code'].iloc[name_index]
+
+# #Select date&station to plot
+# SV = df.iloc[:,0:6]
+# bitmask = (SV['Einddatumtijd'] >= '2021-10-10') & (SV['Einddatumtijd'] < '2021-10-11')
+# SV_okt = SV[bitmask]
+
+# print(SV_okt)
+
+# plt.plot('Einddatumtijd', 'NL01485', data=SV_okt)
+# plt.show()
 
 
-# Create dataframe for plot
-df2 = get_ts_df(df)
+df = get_ts_df(df)
 
-
-#plot pm concentration for vondelpark station
 start_date_1 = "2021-10-10"
 end_date_1 = "2021-10-10"
 station_codes = ['NL49014']
-
-df2.loc[start_date_1:end_date_1, station_codes].plot()
+df.loc[start_date_1:end_date_1, station_codes].plot()
 plt.show()
 
-#Different date
 start_date_2 = "2021-10-11"
 end_date_2 = "2021-10-11"
 
-df2.loc[start_date_2:end_date_2, station_codes].plot()
+df.loc[start_date_2:end_date_2, station_codes].plot()
 plt.show()
 
-#different date
 start_date_2 = "2021-10-11"
 end_date_3 = "2021-10-18"
 
-df2.loc[start_date_2:end_date_3, station_codes].plot()
+df.loc[start_date_2:end_date_3, station_codes].plot()
 plt.show()
-
-
-df2.head(10)
-
-print("NL01485:", df['NL01485'].max())
-

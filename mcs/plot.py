@@ -8,7 +8,6 @@ amsterdam_geojson = gpd.read_file(
     str(ASSETS_DIR / "amsterdam_neighbourhoods.geojson")
 )
 
-
 def plot_points_lat_lng(df, label_column=None):
     gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df.lng, df.lat))
 
