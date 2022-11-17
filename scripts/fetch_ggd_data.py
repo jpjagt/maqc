@@ -10,16 +10,32 @@ from mcs.constants import (
     ROOT_DIR,
 )
 
-base_url = "https://data.rivm.nl/data/luchtmeetnet/Vastgesteld-jaar/"
-years = [str(i) for i in range(2012, 2022)]
 
-for year in years:
-    write_dir = os.path.join(GGD_DATA_DIR, year)
-    print("Creating " + write_dir)
-    os.makedirs(write_dir, exist_ok=True)
-    for component in GGD_COMPONENTS:
-        filename = year + "_" + component + ".csv"
-        url = base_url + "/" + year + "/" + filename
-        response = requests.get(url)
-        with open(os.path.join(write_dir, filename), "wb") as f:
-            f.write(response.content)
+
+def get_data_for(years, base_url, current_year=False):
+    for year in years:
+        write_dir = os.path.join(GGD_DATA_DIR, year)
+        print("Creating " + write_dir)
+        os.makedirs(write_dir, exist_ok=True)
+        for component in GGD_COMPONENTS:
+
+            filename = year + "_" + component + ".csv"
+            if current_year:
+                url = base_url + filename
+            else:
+                url = base_url + year + "/" + filename
+            print(url)
+            response = requests.get(url)
+            with open(os.path.join(write_dir, filename), "wb") as f:
+                f.write(response.content)
+
+# get_data_for(
+#     years = [year for year in GGD_YEARS if not year.startswith("2022")],
+#     base_url = "https://data.rivm.nl/data/luchtmeetnet/Vastgesteld-jaar/",
+# )
+
+get_data_for(
+    years = [year for year in GGD_YEARS if year.startswith("2022")],
+    base_url = "https://data.rivm.nl/data/luchtmeetnet/Actueel-jaar/",
+    current_year=True
+)
