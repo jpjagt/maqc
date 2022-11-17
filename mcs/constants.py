@@ -12,7 +12,18 @@ GVB_DATA_DIR = DATA_DIR / "gvb"
 KNMI_DATA_DIR = DATA_DIR / "knmi"
 SNIFFER_DATA_DIR = DATA_DIR / "sniffer"
 
-KNMI_START_DATE = '2021-11-01'
+CAMERA_DIR = DATA_DIR / "camera"
+CAMERA_IMAGES_DIR = CAMERA_DIR / "images"
+CAMERA_INTERVAL = 120  # seconds
+IMG_LABELS_CSV_FPATH = CAMERA_DIR / "img_labels.csv"
+CAMERA_LABEL_TASKS = [
+    "ntrucks_on_left_half",
+    "ntrucks_on_right_half",
+    "ncranes_on_left_half",
+    "ncranes_on_right_half",
+]
+
+KNMI_START_DATE = "2021-11-01"
 GGD_YEARS = list(map(str, range(2012, 2022))) + [
     "2022_01",
     "2022_02",
