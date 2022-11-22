@@ -10,6 +10,7 @@ GGD_DATA_DIR = DATA_DIR / "ggd"
 MIT_DATA_DIR = DATA_DIR / "mit"
 GVB_DATA_DIR = DATA_DIR / "gvb"
 KNMI_DATA_DIR = DATA_DIR / "knmi"
+UFP_DATA_DIR = DATA_DIR / "ufp"
 SNIFFER_DATA_DIR = DATA_DIR / "sniffer"
 
 CAMERA_DIR = DATA_DIR / "camera"
@@ -69,12 +70,8 @@ GGD_AMSTERDAM_STATIONS = [
     {"code": "NL49016", "name": "Amsterdam-Westerpark"},
 ]
 
-GGD_AMSTERDAM_STATION_CODES = set(
-    station["code"] for station in GGD_AMSTERDAM_STATIONS
-)
-GGD_AMSTERDAM_STATION_NAMES = set(
-    station["name"] for station in GGD_AMSTERDAM_STATIONS
-)
+GGD_AMSTERDAM_STATION_CODES = set(station["code"] for station in GGD_AMSTERDAM_STATIONS)
+GGD_AMSTERDAM_STATION_NAMES = set(station["name"] for station in GGD_AMSTERDAM_STATIONS)
 
 MIT_CSV_HEADERS = [
     "is_summary",
