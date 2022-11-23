@@ -28,9 +28,12 @@ class MITDataLoader(object):
         df = df[df["is_summary"] == 0]
 
         df["timestamp"] = pd.to_datetime(df["timestamp"], unit="s")
+        df["PM1"] = df["PM1"].apply(pd.to_numeric, args=("coerce",))
+        df["PM10"] = df["PM10"].apply(pd.to_numeric, args=("coerce",))
+        df["PM25"] = df["PM25"].apply(pd.to_numeric, args=("coerce",))
 
-        #round to the nearest 5 seconds
-        #df["timestamp"].dt.round('5s')
+        # round to the nearest 5 seconds
+        # df["timestamp"].dt.round('5s')
 
         # some timestamps might be from 1999; we only want data from this year
         # and later
@@ -39,8 +42,7 @@ class MITDataLoader(object):
         # it's a UTC timestamp, and we're UTC+1
         df["timestamp"] += pd.DateOffset(hours=1)
 
-        df = df.set_index('timestamp').sort_index()
-
+        df = df.set_index("timestamp").sort_index()
 
         for col in df.columns:
             if "bin" in col:
