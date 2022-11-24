@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import geopandas as gpd
 
-from mcs.constants import ASSETS_DIR
+from mcs.constants import ASSETS_DIR, ROOT_DIR
 
 amsterdam_geojson = gpd.read_file(
     str(ASSETS_DIR / "amsterdam_neighbourhoods.geojson")
@@ -25,17 +25,35 @@ def plot_points_lat_lng(df, label_column=None):
 
 
 def plot_line(
-    dflist, col, yscale="linear", xlabel=None, ylabel=None, outliers=True
+    dflist,
+    col,
+    yscale="linear",
+    xlabel=None,
+    ylabel=None,
+    legend=None,
+    outliers=None,
+    outfile=None,
 ):
+    """ Plots a simple line for 1 column of 1 or more DataFrames
+
+    Keyword arguments:
+    dflist -- (DataFrame or List of DataFrames)
+    col -- Column name (string)
+    yscale -- y-axis scale (string)
+    xlabel -- (string)
+    ylabel -- (string)
+    outliers -- quantiles to remove (tuple)
+    outfile -- name of output file (string)
+"""
     if type(dflist) == pd.DataFrame:
         dflist = [dflist]
 
     fig, ax = plt.subplots()
 
     for df in dflist:
-        if not outliers:
-            q_low = df[col].quantile(0.01)
-            q_hi = df[col].quantile(0.99)
+        if outliers != None:
+            q_low = df[col].quantile(outliers[0])
+            q_hi = df[col].quantile(outliers[1])
             df = df[(df[col] < q_hi) & (df[col] > q_low)]
         ax.plot(df.index, df[col])
 
@@ -45,6 +63,12 @@ def plot_line(
         ax.set_xlabel(xlabel)
     if ylabel:
         ax.set_ylabel(ylabel)
+
+    if legend:
+        ax.legend(legend)
+
+    if outfile != None:
+        fig.savefig(str(ROOT_DIR / ("exports/" + outfile + ".svg")))
     fig.show()
 
 
