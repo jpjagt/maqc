@@ -31,17 +31,20 @@ def plot_line(
     xlabel=None,
     ylabel=None,
     legend=None,
+    title=None,
     outliers=None,
     outfile=None,
 ):
     """ Plots a simple line for 1 column of 1 or more DataFrames
 
     Keyword arguments:
-    dflist -- (DataFrame or List of DataFrames)
+    dflist -- ((List of) DataFrame)
     col -- Column name (string)
     yscale -- y-axis scale (string)
     xlabel -- (string)
     ylabel -- (string)
+    title -- (string)
+    legend -- ((list of) string)
     outliers -- quantiles to remove (tuple)
     outfile -- name of output file (string)
 """
@@ -63,9 +66,10 @@ def plot_line(
         ax.set_xlabel(xlabel)
     if ylabel:
         ax.set_ylabel(ylabel)
-
     if legend:
         ax.legend(legend)
+    if title:
+        ax.set_title(title)
 
     if outfile != None:
         fig.savefig(str(ROOT_DIR / ("exports/" + outfile + ".svg")))
