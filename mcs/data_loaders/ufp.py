@@ -42,7 +42,7 @@ class UFPDataLoader(object):
         return df
 
     def load_data(self, experiment_name, device_name):
-        # data/ufp/experiment1/device1/2022_01_01/2343_230439.txt
+        # example path: data/ufp/2022_11_25/sensor1/...
         data_dir = UFP_DATA_DIR / experiment_name / device_name
         dfs = [self._read_txt(fpath) for fpath in data_dir.glob("**/*.txt")]
         df = pd.concat(dfs)
