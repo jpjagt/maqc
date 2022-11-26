@@ -2,7 +2,7 @@ from mcs.data_loaders import MITDataLoader
 import pandas as pd 
 import matplotlib.pyplot as plt
 from mcs.plot import plot_line
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, LogisticRegression 
 import numpy as np
 
 loader = MITDataLoader()
@@ -22,14 +22,18 @@ Y=sensor_df[['PM25']]
 
 #fit regression model
 lr = LinearRegression()
-lr.fit(X, Y)
+lg = LogisticRegression()
 
-y_pred = lr.predict(X) 
+lr.fit(X+X**2, Y)
+
+
+y_pred = lr.predict(X+X**2) 
 
 #plot humidity vs pm25 with fitted line
-plt.scatter(X, Y, color = 'red')
-plt.plot(X, lr.predict(X), color = 'blue')
+plt.scatter(X, Y, color = 'red', s = 1)
+plt.plot(X, lr.predict(X+X**2), color = 'blue')
 plt.title('PM25 vs Humidity')
 plt.xlabel('Humidity')
 plt.ylabel('PM25')
 plt.show()
+
