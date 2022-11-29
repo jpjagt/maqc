@@ -1,15 +1,17 @@
-import matplotlib.pyplot as plt
 import pandas as pd
 import tkinter as tk
 
 from PIL import ImageTk, Image
 from mcs.constants import (
-    CAMERA_IMAGES_DIR,
     IMG_LABELS_CSV_FPATH,
     CAMERA_LABEL_TASKS,
 )
 
+# only expose the label_images method
+__all__ = ["label_images"]
+
 DEFAULT = object()
+DEFAULT_DISPLAY_INTERVAL = 0.8
 
 
 def update_text(text_obj, text):
@@ -17,11 +19,15 @@ def update_text(text_obj, text):
     text_obj.text = text
 
 
-class Window(tk.Tk):
-    display_interval = 1.4  # seconds
-
-    def __init__(self, images_df, task_name=None):
+class CameraImageLabeler(tk.Tk):
+    def __init__(
+        self,
+        images_df,
+        display_interval=DEFAULT_DISPLAY_INTERVAL,
+        task_name=None,
+    ):
         self._images_df = images_df
+        self._display_interval = display_interval
         self._current_index = 0
 
         if task_name is not None and task_name not in self._images_df:
@@ -102,8 +108,7 @@ class Window(tk.Tk):
     def _display_image(self, img_info):
         update_text(self._current_img_text, img_info.timestamp)
 
-        fpath = CAMERA_IMAGES_DIR / img_info.fname
-        # fpath = CAMERA_IMAGES_DIR / "2022-11-14-140009.jpg"
+        fpath = img_info.fpath
         img = ImageTk.PhotoImage(Image.open(fpath).resize((1200, 800)))
         self.image_label.configure(image=img)
         self.image_label.image = img
@@ -128,7 +133,7 @@ class Window(tk.Tk):
 
         if not initial_display:
             self.after(
-                int(self.display_interval * 1000), self._display_next_image
+                int(self._display_interval * 1000), self._display_next_image
             )
 
     def _pressed_key(self, event):
@@ -171,11 +176,14 @@ class Window(tk.Tk):
         self._images_df.to_csv(fpath, index=False)
 
 
-if __name__ == "__main__":
+def label_images(
+    img_labels_csv_path=IMG_LABELS_CSV_FPATH,
+    display_interval=DEFAULT_DISPLAY_INTERVAL,
+):
     images_df = pd.read_csv(
-        IMG_LABELS_CSV_FPATH, parse_dates=["timestamp"], index_col=False
+        img_labels_csv_path, parse_dates=["timestamp"], index_col=False
     )
-    window = Window(images_df)
+    window = CameraImageLabeler(images_df, display_interval)
     window.mainloop()
     # when it's over, save the csv
     window._save_images_df(fpath=IMG_LABELS_CSV_FPATH)

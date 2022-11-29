@@ -15,13 +15,10 @@ SNIFFER_DATA_DIR = DATA_DIR / "sniffer"
 
 CAMERA_DIR = DATA_DIR / "camera"
 CAMERA_IMAGES_DIR = CAMERA_DIR / "images"
-CAMERA_INTERVAL = 120  # seconds
 IMG_LABELS_CSV_FPATH = CAMERA_DIR / "img_labels.csv"
 CAMERA_LABEL_TASKS = [
-    "ntrucks_on_left_half",
-    "ntrucks_on_right_half",
-    "ncranes_on_left_half",
-    "ncranes_on_right_half",
+    "active_vehicles_in_front",
+    "active_vehicles_in_back",
 ]
 
 KNMI_START_DATE = "2021-11-01"
@@ -70,8 +67,12 @@ GGD_AMSTERDAM_STATIONS = [
     {"code": "NL49016", "name": "Amsterdam-Westerpark"},
 ]
 
-GGD_AMSTERDAM_STATION_CODES = set(station["code"] for station in GGD_AMSTERDAM_STATIONS)
-GGD_AMSTERDAM_STATION_NAMES = set(station["name"] for station in GGD_AMSTERDAM_STATIONS)
+GGD_AMSTERDAM_STATION_CODES = set(
+    station["code"] for station in GGD_AMSTERDAM_STATIONS
+)
+GGD_AMSTERDAM_STATION_NAMES = set(
+    station["name"] for station in GGD_AMSTERDAM_STATIONS
+)
 
 MIT_CSV_HEADERS = [
     "is_summary",
