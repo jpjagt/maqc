@@ -21,7 +21,11 @@ CAMERA_LABEL_TASKS = [
     "active_vehicles_in_back",
 ]
 
-KNMI_START_DATE = "2021-11-01"
+EXPERIMENT_START_DATE = "2022-11-07"
+EXPERIMENT_END_DATE = "2022-11-28"
+START_TIME = "04:00"
+END_TIME = "20:00"
+
 GGD_YEARS = list(map(str, range(2012, 2022))) + [
     "2022_01",
     "2022_02",
@@ -124,6 +128,53 @@ MIT_CSV_HEADERS = [
     "noise",
 ]
 
+MIT_NUMERIC_COLUMNS = [
+    "latitude",
+    "longitude",
+    "PM1",
+    "PM25",
+    "PM10",
+    "bin0",
+    "bin1",
+    "bin2",
+    "bin3",
+    "bin4",
+    "bin5",
+    "bin6",
+    "bin7",
+    "bin8",
+    "bin9",
+    "bin10",
+    "bin11",
+    "bin12",
+    "bin13",
+    "bin14",
+    "bin15",
+    "bin16",
+    "bin17",
+    "bin18",
+    "bin19",
+    "bin20",
+    "bin21",
+    "bin22",
+    "bin23",
+    "flowrate",
+    "countglitch",
+    "laser_status",
+    "temperature_opc",
+    "humidity_opc",
+    "data_is_valid",
+    "temperature",
+    "humidity",
+    "ambient_IR",
+    "object_IR",
+    "gas_op1_w",
+    "gas_op1_r",
+    "gas_op2_w",
+    "gas_op2_r",
+    "noise",
+]
+
 BINSIZES = [
     0.35,
     0.46,
@@ -166,3 +217,5 @@ SNIFFER_CSV_HEADERS = [
     "v",
     "voc",
 ]
+
+DATE_FOR_RELATIVE_TIME_OF_DAY = "2000-01-01"

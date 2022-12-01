@@ -1,5 +1,9 @@
 import sys
 import json
+import calendar
+import pandas as pd
+
+from mcs.constants import DATE_FOR_RELATIVE_TIME_OF_DAY
 
 
 def load_json(fpath):
@@ -95,3 +99,19 @@ def query_yes_no(
         print(remark_if_no)
 
     return outcome
+
+
+def set_timestamp_related_cols(df, src_col="timestamp"):
+    # create date column
+    df["date"] = df["timestamp"].dt.date
+    # create day of week column
+    cat_type = pd.CategoricalDtype(list(calendar.day_name), ordered=True)
+    df["day_of_week"] = pd.Categorical.from_codes(
+        df["timestamp"].dt.day_of_week, dtype=cat_type
+    )
+    # create normalized date column
+    df["time_of_day"] = pd.to_datetime(
+        DATE_FOR_RELATIVE_TIME_OF_DAY
+        + " "
+        + df["timestamp"].dt.time.astype(str)
+    )

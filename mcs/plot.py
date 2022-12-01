@@ -1,12 +1,23 @@
-import matplotlib.pyplot as plt
+from matplotlib import pyplot as plt, dates as mdates
+import itertools
+import numpy as np
 import pandas as pd
+import seaborn as sns
 import geopandas as gpd
 
-from mcs.constants import ASSETS_DIR, ROOT_DIR
+from mcs.constants import (
+    ASSETS_DIR,
+    ROOT_DIR,
+    DATE_FOR_RELATIVE_TIME_OF_DAY,
+    START_TIME,
+    END_TIME,
+)
 
 amsterdam_geojson = gpd.read_file(
     str(ASSETS_DIR / "amsterdam_neighbourhoods.geojson")
 )
+
+sns.set()
 
 
 def plot_points_lat_lng(df, label_column=None):
@@ -35,7 +46,7 @@ def plot_line(
     outliers=None,
     outfile=None,
 ):
-    """ Plots a simple line for 1 column of 1 or more DataFrames
+    """Plots a simple line for 1 column of 1 or more DataFrames
 
     Keyword arguments:
     dflist -- ((List of) DataFrame)
@@ -46,8 +57,7 @@ def plot_line(
     title -- (string)
     legend -- ((list of) string)
     outliers -- quantiles to remove (tuple)
-    outfile -- name of output file (string)
-"""
+    outfile -- name of output file (string)"""
     if type(dflist) == pd.DataFrame:
         dflist = [dflist]
 
@@ -116,3 +126,69 @@ def plot_col_of_multiple_sensors2(dflist, colname):
 
     df.astype(float).plot(alpha=0.5)
     plt.ylabel(colname)
+
+
+def set_xaxis_format_to_time_of_day(ax):
+    ax.set_xlim(
+        [
+            pd.to_datetime(f"{DATE_FOR_RELATIVE_TIME_OF_DAY} {START_TIME}")
+            + pd.DateOffset(minutes=-15),
+            pd.to_datetime(f"{DATE_FOR_RELATIVE_TIME_OF_DAY} {END_TIME}")
+            + pd.DateOffset(minutes=15),
+        ]
+    )
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M:%S"))
+
+
+palette = list(sns.color_palette())
+
+
+def tsplot(data, y, ax=None, hue=None, hue_whitelist=None, freq=None):
+    x = "time_of_day"
+
+    if ax is None:
+        plt.figure(figsize=(16, 9))
+        ax = plt.gca()
+
+    if hue is None:
+        hue_vals = [None]
+    else:
+        hue_vals = data[hue].unique()
+
+    for color, val in zip(palette, hue_vals):
+        if hue_whitelist is not None:
+            if val not in hue_whitelist:
+                continue
+
+        if val is None:
+            rel_df = data
+        else:
+            rel_df = data[data[hue] == val]
+
+        gb = x if freq is None else pd.Grouper(freq=freq, key=x)
+
+        agg_df = (
+            rel_df.groupby(gb)[y]
+            .agg(["mean", "std"])
+            .sort_index()
+            .reset_index()
+        )
+
+        xdata = agg_df[x]
+        est = agg_df["mean"]
+        sd = agg_df["std"]
+        cis = (est - sd, est + sd)
+        ax.fill_between(
+            xdata, cis[0], cis[1], alpha=0.2, color=color, label=val
+        )
+        ax.plot(xdata, est, color=color)
+
+    ax.set_xlabel(x)
+    ax.set_ylabel(y)
+    ax.margins(x=0)
+    plt.legend()
+
+    if x == "time_of_day":
+        set_xaxis_format_to_time_of_day(ax)
+
+    return ax

@@ -1,0 +1,173 @@
+#+TITLE: cocreation preprocessing
+#+BIND: org-export-use-babel nil
+#+AUTHOR: july
+#+DATE: November 28, 2022
+#+LATEX: \setlength\parindent{0pt}
+#+LATEX_HEADER: \usepackage{minted}
+#+LATEX_HEADER: \usepackage[margin=1.2in]{geometry}
+#+LATEX_HEADER: \usepackage{mathpazo}
+#+LATEX_HEADER: \usepackage{adjustbox}
+#+LATEX_HEADER_EXTRA:  \usepackage{mdframed}
+#+LATEX_HEADER_EXTRA: \BeforeBeginEnvironment{minted}{\begin{mdframed}}
+#+LATEX_HEADER_EXTRA: \AfterEndEnvironment{minted}{\end{mdframed}}
+#+LATEX_HEADER_EXTRA: \BeforeBeginEnvironment{tabular}{\begin{adjustbox}{center}}
+#+LATEX_HEADER_EXTRA: \AfterEndEnvironment{tabular}{\end{adjustbox}}
+#+MACRO: NEWLINE @@latex:\\@@ @@html:<br>@@
+#+PROPERTY: header-args :exports both :session cocreation :cache :results value
+#+OPTIONS: ^:nil
+#+LATEX_COMPILER: pdflatex
+
+this file contains the analysis for figuring out which preprocessing we want to
+apply to the uncalibrated data, for our second cocreation session.
+
+#+BEGIN_SRC python
+import seaborn as sns
+import pandas as pd
+import matplotlib.pyplot as plt
+from mcs.data_loaders import MITDataLoader
+
+relevant_columns = [
+    "deviceID",
+    "latitude",
+    "longitude",
+    "PM1",
+    "PM25",
+    "PM10",
+    "temperature_opc",
+    "humidity_opc",
+    "temperature",
+    "humidity",
+    "gas_op1_w",
+    "gas_op1_r",
+    "gas_op2_w",
+    "gas_op2_r",
+    "src_fpath",
+]
+#+END_SRC
+
+#+BEGIN_SRC python
+## loading the city scanner data, for sensors ams1, ams2, ams3, and ams4
+mit_data_loader = MITDataLoader()
+# this is the range that we want to load
+MEASUREMENT_RANGE = slice("2022-11-07", "2022-11-28")
+# the experiment name
+MIT_EXPERIMENT_NAME = "ensemble-site-2022-full"
+# these are the ids of the city scanners
+MIT_CS_IDS = ["ams1", "ams2", "ams3", "ams4"]
+# loading the data
+mit_cs_id2df = {
+    mit_cs_id: mit_data_loader.load_data(MIT_EXPERIMENT_NAME, mit_cs_id).loc[
+        MEASUREMENT_RANGE, :
+    ]
+    for mit_cs_id in MIT_CS_IDS
+}
+mit_df = pd.concat(mit_cs_id2df, names=['sensor_name', 'timestamp'])
+
+mit_df = mit_df[relevant_columns]
+#+END_SRC
+
+* humidity vs humidity_opc
+
+#+BEGIN_SRC python
+def humidity_corr(df):
+  return df['humidity'].corr(df['humidity_opc'])
+
+def plot_humidity(df, name):
+  df[['humidity', 'humidity_opc']].asfreq("s").plot(marker='.')
+  plt.title(f"humidity for {name}")
+  plt.show()
+
+for mit_cs_id, df in mit_cs_id2df.items():
+  print(mit_cs_id, "humidity corr:", round(humidity_corr(df), 3))
+  plot_humidity(df, mit_cs_id)
+#+END_SRC
+
+for humidity, i feel we'd get the most accurate values if we use the
+'humidity_opc' column but then adjusted so that the mean equals the 'humidity'
+mean (over all sensors)
+
+* temperature vs temperature_opc
+
+#+BEGIN_SRC python
+def normalize(obj):
+    return (obj - obj.mean()) / (obj.max() - obj.min())
+
+
+def temperature_corr(df):
+    return df["temperature"].corr(df["temperature_opc"])
+
+
+def plot_temperature(df, name):
+    df[["temperature", "temperature_opc"]].asfreq("s").plot(marker=".")
+    plt.title(f"temperature for {name}")
+    plt.show()
+
+
+for mit_cs_id, df in mit_cs_id2df.items():
+    # df = df.copy()
+    # df["temperature"] = normalize(df["temperature"])
+    # df["temperature_opc"] = normalize(df["temperature_opc"].round(1)) * 1.1
+    print(mit_cs_id, "temperature corr:", round(temperature_corr(df), 3))
+    plot_temperature(df, mit_cs_id)
+#+END_SRC
+
+let's use the 'temperature' column as-is. there is no reason to believe it's
+inaccurate, and besides, we're mainly looking at relative patterns.
+
+* pm humidity correction
+
+#+BEGIN_SRC python
+mit_df["humidity_corrected"] = mit_df["humidity_opc"]
+mit_df["humidity_corrected"] += (
+    mit_df["humidity"].mean() - mit_df["humidity_corrected"].mean()
+)
+
+rel_mit_df = mit_df.unstack(level=0).between_time("06:00","17:30").stack().swaplevel()
+#+END_SRC
+
+#+BEGIN_SRC python
+mit_df_plugged_sensors = mit_df.loc[["ams1", "ams2"]].reset_index()
+
+component2max_threshold = {"PM1": 500, "PM25": 200, "PM10": 300}
+
+
+for component in ["PM1", "PM25", "PM10"]:
+    plt.figure(figsize=(16, 9))
+    component_mask = (
+        mit_df_plugged_sensors[component] < component2max_threshold[component]
+    )
+    sns.scatterplot(
+        x="humidity_corrected",
+        y=component,
+        hue="sensor_name",
+        alpha=0.3,
+        # data=mit_df_plugged_sensors[component_mask],
+        data=mit_df_plugged_sensors,
+        # data=mit_df_reset_index,
+        ec=None,
+    )
+    plt.figure(figsize=(16, 9))
+    mit_df_plugged_sensors.groupby(
+        mit_df_plugged_sensors.humidity_corrected.round()
+    )[component].median().plot.bar(ylabel=f"median {component}")
+    # for sensor_name in mit_df_plugged_sensors.sensor_name.unique():
+    #     plt.figure()
+    #     sns.histplot(
+    #         x="humidity_corrected",
+    #         y=col,
+    #         bins=75,
+    #         pthresh=0.1,
+    #         cmap="mako",
+    #         data=mit_df_plugged_sensors[
+    #             (mit_df_plugged_sensors.sensor_name == sensor_name) & component_mask
+    #         ],
+    #     )
+    #     plt.title(f"{col} - {sensor_name}")
+#+END_SRC
+
+correcting:
+
+#+BEGIN_SRC python
+def correct_component(df, component):
+
+#+END_SRC

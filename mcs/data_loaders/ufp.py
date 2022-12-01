@@ -1,6 +1,5 @@
 from mcs.constants import UFP_DATA_DIR
 import pandas as pd
-from datetime import timedelta
 
 TIMECOMPENSATION = {"sensor1": 32, "sensor2": 0}
 
