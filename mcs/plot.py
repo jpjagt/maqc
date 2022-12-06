@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import geopandas as gpd
+from windrose import WindroseAxes
 
 from mcs.constants import (
     ASSETS_DIR,
@@ -137,7 +138,7 @@ def set_xaxis_format_to_time_of_day(ax):
             + pd.DateOffset(minutes=15),
         ]
     )
-    ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M:%S"))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
 
 
 palette = list(sns.color_palette())
@@ -192,3 +193,42 @@ def tsplot(data, y, ax=None, hue=None, hue_whitelist=None, freq=None):
         set_xaxis_format_to_time_of_day(ax)
 
     return ax
+
+
+def windrose(data, wind_direction_col, y_col):
+    fig, ax = plt.subplots(figsize=(11, 11), dpi=80)
+    ax = WindroseAxes.from_ax()
+    ax.bar(
+        data[wind_direction_col],
+        data[y_col],
+        normed=True,
+        opening=0.8,
+        edgecolor="white",
+    )
+    ax.set_legend()
+
+
+def add_vfills_working_hours(ax, dates):
+    date_unique = pd.Series(dates.unique())
+
+    def _get_dates_with_timeoffset(time_str):
+        hours, mins = map(int, time_str.split(":"))
+        return date_unique + pd.DateOffset(hours=hours, minutes=mins)
+
+    first_loop = True
+    for start_moment, end_moment in zip(
+        _get_dates_with_timeoffset(START_TIME),
+        _get_dates_with_timeoffset(END_TIME),
+    ):
+        if first_loop:
+            label = "working hours"
+            first_loop = False
+        else:
+            label = None
+        ax.axvspan(
+            start_moment, end_moment, alpha=0.1, color="black", label=label
+        )
+
+
+# def sensor_active_plot(mit_df):
+#     mit_df

@@ -1,3 +1,4 @@
+import os
 import sys
 import json
 import calendar
@@ -115,3 +116,16 @@ def set_timestamp_related_cols(df, src_col="timestamp"):
         + " "
         + df["timestamp"].dt.time.astype(str)
     )
+
+    df["is_weekday"] = (
+        ~df["day_of_week"].str.lower().isin(["saturday", "sunday"])
+    )
+
+
+def rm_dir_contents(dir):
+    files = dir.glob("**/*")
+    for f in files:
+        try:
+            os.remove(f)
+        except Exception:
+            continue

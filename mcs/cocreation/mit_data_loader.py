@@ -23,6 +23,9 @@ RELEVANT_COLUMNS = [
     "time_of_day",
     "day_of_week",
     "date",
+    "is_weekday",
+    "co_mgm3",
+    "no2_mgm3",
 ]
 
 ROLLING_WINDOW_SIZE = 30
@@ -36,12 +39,14 @@ class CocreationMITDataLoader(object):
         cs_ids,
         start_time=START_TIME,
         end_time=END_TIME,
+        max_rh_threshold=None,
     ):
         self._measurement_range = measurement_range
         self._experiment_name = experiment_name
         self._cs_ids = cs_ids
         self._start_time = start_time
         self._end_time = end_time
+        self._max_rh_threshold = max_rh_threshold
 
     def _set_humidity_corrected(self, df):
         # humidity_opc has a more accurate pattern, as it's not clamped at
@@ -51,6 +56,28 @@ class CocreationMITDataLoader(object):
         df["humidity_corrected"] += (
             df["humidity"].mean() - df["humidity_corrected"].mean()
         )
+        return df
+
+    def _compute_co_and_no2_ppm(self, df):
+        # raw data (mv) / (circuit gain (mv/na) * sensor sensitivity (na/ppm or
+        # na/ppb))
+
+        def _convert(raw_data, circuit_gain, sensor_sensitivity):
+            return raw_data * (circuit_gain / sensor_sensitivity)
+
+        df["co_mgm3"] = (
+            _convert(
+                df["gas_op1_w"], circuit_gain=0.8, sensor_sensitivity=336.9
+            )
+            * 1.25  # ppm -> mg/m3
+        )
+        df["no2_mgm3"] = (
+            _convert(
+                df["gas_op2_w"], circuit_gain=-0.73, sensor_sensitivity=-345.1
+            )
+            * 2.05
+        )  # ppm -> mg/m3
+
         return df
 
     def _correct_pm(self, df):
@@ -79,6 +106,9 @@ class CocreationMITDataLoader(object):
         # correct the humidity
         df = self._set_humidity_corrected(df)
 
+        # compute the PPM for co and no2
+        df = self._compute_co_and_no2_ppm(df)
+
         # make sensor_name part of columns and not index
         df = df.unstack(level=0)
 
@@ -91,11 +121,11 @@ class CocreationMITDataLoader(object):
         # only return the columns which are relevant
         df = df[RELEVANT_COLUMNS]
 
-        # only take data between start and end time
-        df = (
-            df.between_time(self._start_time, self._end_time)
-            .stack()
-            .swaplevel()
-        )
+        # optionally remove datapoints exceeding a certain relative humidity
+        if self._max_rh_threshold:
+            df = df[df.humidity_corrected < self._max_rh_threshold]
 
-        return df
+        # only take data between start and end time
+        df_day = df.between_time(self._start_time, self._end_time)
+
+        return df.stack().swaplevel(), df_day.stack().swaplevel()

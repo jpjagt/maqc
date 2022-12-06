@@ -3,6 +3,8 @@ from pathlib import Path
 
 ROOT_DIR = Path(config("ROOT_DIR"))
 
+FIGURES_DIR = ROOT_DIR / "figures"
+
 ASSETS_DIR = ROOT_DIR / "mcs" / "assets"
 
 DATA_DIR = ROOT_DIR / "data"
@@ -23,8 +25,8 @@ CAMERA_LABEL_TASKS = [
 
 EXPERIMENT_START_DATE = "2022-11-07"
 EXPERIMENT_END_DATE = "2022-11-28"
-START_TIME = "04:00"
-END_TIME = "20:00"
+START_TIME = "06:15"
+END_TIME = "16:30"
 
 GGD_YEARS = list(map(str, range(2012, 2022))) + [
     "2022_01",
