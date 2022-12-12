@@ -114,9 +114,14 @@ class MITDataLoader(object):
 
         return df
 
-    def load_data(self, experiment_name, device_name):
-        print(f"[MITDataLoader] loading {experiment_name}/{device_name}")
-        data_dir = MIT_DATA_DIR / experiment_name / device_name
+    def load_data(self, experiment_name, sensor_name):
+        if isinstance(sensor_name, (list, tuple)):
+            return self._load_data_for_multiple_sensors(
+                experiment_name, sensor_name
+            )
+
+        print(f"[MITDataLoader] loading {experiment_name}/{sensor_name}")
+        data_dir = MIT_DATA_DIR / experiment_name / sensor_name
         if not data_dir.exists():
             raise ValueError(
                 "the directory for the given experiment and device does not exist"
@@ -124,4 +129,13 @@ class MITDataLoader(object):
         dfs = [self._read_csv(fpath) for fpath in data_dir.glob("**/*.CSV")]
         df = pd.concat(dfs)
         df = self._preprocess_data(df)
+        return df
+
+    def _load_data_for_multiple_sensors(self, experiment_name, sensor_names):
+        df = pd.concat(
+            {
+                name: self.load_data(experiment_name, name)
+                for name in sensor_names
+            }
+        )
         return df

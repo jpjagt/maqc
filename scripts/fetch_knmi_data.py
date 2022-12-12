@@ -4,10 +4,15 @@ import zipfile
 from io import BytesIO
 
 
+# 240 = schiphol
+# 344 = rotterdam
+
+
 def get_data_for():
     urls = [
         "https://cdn.knmi.nl/knmi/map/page/klimatologie/gegevens/daggegevens/etmgeg_240.zip",
         "https://cdn.knmi.nl/knmi/map/page/klimatologie/gegevens/uurgegevens/uurgeg_240_2021-2030.zip",
+        "https://cdn.knmi.nl/knmi/map/page/klimatologie/gegevens/uurgegevens/uurgeg_344_2021-2030.zip",
     ]
 
     for url in urls:

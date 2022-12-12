@@ -75,8 +75,8 @@ class CocreationMITDataLoader(object):
             _convert(
                 df["gas_op2_w"], circuit_gain=-0.73, sensor_sensitivity=-345.1
             )
-            * 2.05
-        )  # ppm -> mg/m3
+            * 2.05  # ppm -> mg/m3
+        )
 
         return df
 

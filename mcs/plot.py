@@ -230,5 +230,26 @@ def add_vfills_working_hours(ax, dates):
         )
 
 
-# def sensor_active_plot(mit_df):
-#     mit_df
+def sensor_active_plot(mit_df):
+    df = mit_df.index.to_frame().reset_index(drop=True)
+    df["is_present"] = True
+    sensor_names = list(reversed(sorted(df.sensor_name.unique())))
+    df = (
+        df.pivot(index="timestamp", columns="sensor_name", values="is_present")
+        .asfreq("5s")
+        .fillna(False)
+    )
+
+    ax = plt.gca()
+
+    for i, sensor_name in enumerate(sensor_names):
+        y = i + 1
+        ax.fill_between(
+            df.index,
+            y - 0.25,
+            y + 0.25,
+            where=df[sensor_name],
+            interpolate=False,
+            color=palette[i],
+        )
+    ax.set_yticks(range(1, len(sensor_names) + 1), labels=sensor_names)

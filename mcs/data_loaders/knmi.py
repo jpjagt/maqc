@@ -17,7 +17,7 @@ colcode2colname = {
     "T": "temperature",
     "T10N": "temperature_min",
     "TD": "temperature_dew_point",
-    "SQ": "sunshien_duration",
+    "SQ": "sunshine_duration",
     "Q": "global_radiation",
     "DR": "precipitation_duration",
     "RH": "precipitation_hourly",
@@ -81,8 +81,13 @@ colcode2colname = {
 
 
 class KNMIDataLoader(object):
-    def load_data(self):
-        fname = "uurgeg_240_2021-2030.txt"
+    def load_data(
+        self,
+        station_code="240",
+        start_date=EXPERIMENT_START_DATE,
+        end_date=EXPERIMENT_END_DATE,
+    ):
+        fname = f"uurgeg_{station_code}_2021-2030.txt"
         fpath = os.path.join(KNMI_DATA_DIR, fname)
         df = pd.read_csv(fpath, skiprows=30, sep=",")
         df.columns = df.columns.str.strip().map(colcode2colname)
@@ -99,6 +104,11 @@ class KNMIDataLoader(object):
         df = df.set_index("timestamp")
 
         # only select data which was within experiment time period
-        df = df.loc[EXPERIMENT_START_DATE:EXPERIMENT_END_DATE]
+        if start_date:
+            df = df.loc[start_date:]
+        if end_date:
+            df = df.loc[:end_date]
+
+        df = df.sort_index()
 
         return df
