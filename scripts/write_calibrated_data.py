@@ -29,6 +29,7 @@ def write_calibrated_data(
     experiment_end_datetime=EXPERIMENT_END_DATE,
     calibration_knmi_station_code="344",
     experiment_knmi_station_code="240",
+    plot_calibration_training_results=True,
 ):
     calibration_mit_df = MITDataLoader().load_data(
         mit_experiment_name, calibration_sensor_names
@@ -54,7 +55,9 @@ def write_calibrated_data(
     calibration_10sec_df = calibration_data_preprocessor.get_10sec_data()
     calibration_hourly_df = calibration_data_preprocessor.get_hourly_data()
 
-    calibrator = MITDCMRCalibrator()
+    calibrator = MITDCMRCalibrator(
+        plot_results=plot_calibration_training_results
+    )
     calibrator.train(
         dcmr_10sec_df=dcmr_10sec_df,
         dcmr_hourly_df=dcmr_hourly_df,
