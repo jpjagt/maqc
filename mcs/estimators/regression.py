@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 
 from sklearn.model_selection import cross_validate, train_test_split
+from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error, r2_score
 
 
@@ -51,10 +52,14 @@ class RegressionEstimator(object):
             self._df_test,
         ) = split_data(df, x_cols=x_cols, y_col=y_col, encoder=self._encoder)
 
+        self._scaler = StandardScaler()
+        self._X_train = self._scaler.fit_transform(self._X_train)
+        self._X_test = self._scaler.transform(self._X_test)
+
     def train(self):
         # fit anyway, even if we're doing cv, because if we're training a
-        # pipeline with a preprocessor, that preprocessor needs to be fit,
-        # which doesn't happen in cv
+        # pipeline, the non-regressor components aren't being fit properly with
+        # our custom cross validation
         self._model.fit(self._X_train, self._y_train)
 
         if not self._do_cross_validation:
@@ -92,17 +97,21 @@ class RegressionEstimator(object):
 
     def predict(self, df):
         df_encoded = self._encoder.encode_X(df)
-        y_pred = self._model.predict(df_encoded[self._x_cols].values)
+        X_train = df_encoded[self._x_cols].values
+        X_train = self._scaler.transform(X_train)
+        y_pred = self._model.predict(X_train)
         return self._encoder.decode_y(y_pred)
 
     def test(self):
         y_pred = self._model.predict(self._X_test)
         y_pred_decoded = self._encoder.decode_y(y_pred)
         y_test_decoded = self._encoder.decode_y(self._y_test)
+
         r2 = r2_score(y_test_decoded, y_pred_decoded)
         rmse = np.sqrt(mean_squared_error(y_test_decoded, y_pred_decoded))
         print("r2", r2)
         print("RMSE", rmse)
+
         results_df = pd.DataFrame(
             {
                 "y_test": y_test_decoded,

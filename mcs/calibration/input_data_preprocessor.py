@@ -26,7 +26,7 @@ class InputDataPreprocessor(object):
         mit_10sec_df = mit_10sec_df[["mit_pm25_mean", "mit_humidity_mean"]]
         mit_10sec_df.columns = ["mit_pm25_mean", "mit_humidity_mean"]
         mit_10sec_df = mit_10sec_df.dropna()
-        # filter out extreme quantiles
+        # filter out extreme quantiles of pm25
         mit_10sec_df = mit_10sec_df[
             (
                 mit_10sec_df["mit_pm25_mean"]
@@ -39,14 +39,50 @@ class InputDataPreprocessor(object):
         ]
         # filter out high rel humidity
         mit_10sec_df = mit_10sec_df[(mit_10sec_df["mit_humidity_mean"] < 90)]
+        mit_10sec_df = mit_10sec_df.rename(
+            columns={
+                "mit_humidity_mean": "mit_humidity",
+                "mit_pm25_mean": "mit_pm25",
+            }
+        )
 
         knmi_10sec_df = self._knmi_df.asfreq("10s").ffill()
         df = mit_10sec_df.merge(
             knmi_10sec_df, how="left", left_index=True, right_index=True
         )
+        if df.isna().any().any():
+            raise ValueError(
+                "there are nans in the merged df, which probably "
+                "is due to the left merge (i.e. knmi_10sec_df "
+                "doesn't cover same period as mit_10sec_df)."
+            )
         return df
 
     def get_hourly_data(self):
-        self._mit_hourly_df = (
-            self._mit_df[["mit_gas_op2_w"]].resample("1h").mean()
+        mit_hourly_df = (
+            self._mit_df[["mit_gas_op2_w", "mit_humidity"]]
+            .resample("1h")
+            .mean()
         )
+
+        mit_hourly_df["mit_no2_mv_mean"] = mit_hourly_df["mit_gas_op2_w"].mean(
+            axis=1
+        )
+        mit_hourly_df["mit_humidity_mean"] = mit_hourly_df[
+            "mit_humidity"
+        ].mean(axis=1)
+        mit_hourly_df = mit_hourly_df[["mit_no2_mv_mean", "mit_humidity_mean"]]
+        mit_hourly_df.columns = ["mit_no2_mv_mean", "mit_humidity_mean"]
+
+        knmi_hourly_df = self._knmi_df.asfreq("1h").ffill()
+        df = mit_hourly_df.merge(
+            knmi_hourly_df, how="left", left_index=True, right_index=True
+        )
+        if df.isna().any().any():
+            raise ValueError(
+                "there are nans in the merged df, which probably "
+                "is due to the left merge (i.e. knmi_hourly_df "
+                "doesn't cover same period as mit_hourly_df)."
+            )
+
+        return df

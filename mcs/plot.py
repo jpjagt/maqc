@@ -129,22 +129,25 @@ def plot_col_of_multiple_sensors2(dflist, colname):
     plt.ylabel(colname)
 
 
-def set_xaxis_format_to_time_of_day(ax):
-    ax.set_xlim(
-        [
-            pd.to_datetime(f"{DATE_FOR_RELATIVE_TIME_OF_DAY} {START_TIME}")
-            + pd.DateOffset(minutes=-15),
-            pd.to_datetime(f"{DATE_FOR_RELATIVE_TIME_OF_DAY} {END_TIME}")
-            + pd.DateOffset(minutes=15),
-        ]
-    )
+def set_xaxis_format_to_time_of_day(ax, set_xlim=True):
+    if set_xlim:
+        ax.set_xlim(
+            [
+                pd.to_datetime(f"{DATE_FOR_RELATIVE_TIME_OF_DAY} {START_TIME}")
+                + pd.DateOffset(minutes=-15),
+                pd.to_datetime(f"{DATE_FOR_RELATIVE_TIME_OF_DAY} {END_TIME}")
+                + pd.DateOffset(minutes=15),
+            ]
+        )
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
 
 
 palette = list(sns.color_palette())
 
 
-def tsplot(data, y, ax=None, hue=None, hue_whitelist=None, freq=None):
+def tsplot(
+    data, y, ax=None, hue=None, hue_whitelist=None, freq=None, set_xlim=True
+):
     x = "time_of_day"
 
     if ax is None:
@@ -190,7 +193,7 @@ def tsplot(data, y, ax=None, hue=None, hue_whitelist=None, freq=None):
     plt.legend()
 
     if x == "time_of_day":
-        set_xaxis_format_to_time_of_day(ax)
+        set_xaxis_format_to_time_of_day(ax, set_xlim=set_xlim)
 
     return ax
 
