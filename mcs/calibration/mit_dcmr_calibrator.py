@@ -1,8 +1,11 @@
 import matplotlib.pyplot as plt
+import sklearn 
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.pipeline import make_pipeline
+import pandas as pd
+import seaborn as sns 
 
 from mcs.constants import (
     CALIBRATION_START_DATETIME,
@@ -16,6 +19,7 @@ from mcs.log_encoder import LogEncoder
 
 
 class MITDCMRCalibrator(object):
+    #initialize calibration class
     def __init__(
         self,
         plot_results=False,
@@ -26,12 +30,14 @@ class MITDCMRCalibrator(object):
         self._has_trained = False
 
     def _train_calibrated_pm25_model(self, train_10sec_df, dcmr_10sec_df):
+        #merge mit and knmi data with dcmr data 
         df = train_10sec_df.merge(
             dcmr_10sec_df,
             how="inner",
             left_index=True,
             right_index=True,
         )
+        #define columns 
         x_cols = [
             "mit_pm25_mean",
             "mit_humidity_mean",
@@ -50,6 +56,16 @@ class MITDCMRCalibrator(object):
             "knmi_is_thundering",
             "knmi_ice_formation",
         ]
+        # Numerical columns 
+        x_cols_num = [
+            "mit_pm25_mean",
+            "mit_humidity_mean",
+            "knmi_temperature",
+            "knmi_relative_humidity",
+            "knmi_air_pressure",
+            ]
+
+        #target variable 
         y_col = "dcmr_PM25"
         log_encoder = LogEncoder(x_cols_to_encode=["mit_pm25_mean"])
 
@@ -104,7 +120,10 @@ class MITDCMRCalibrator(object):
                 best_r2 = r2
                 best_estimator = estimator
                 best_estimator_name = name
+
         if self._plot_results:
+
+            #Plot estimated values aganist target variable 
             results_df.plot(alpha=0.5)
             plt.legend()
             plt.title(
@@ -112,10 +131,19 @@ class MITDCMRCalibrator(object):
             )
 
             plt.figure()
-
             y_pred = results_df[f"{best_estimator_name} y_pred"]
             y_test = results_df["y_test"]
+           
+           # Generate residuals plot for Polynomial model 
+            residuals = y_test - y_pred
+            data = pd.DataFrame(best_estimator._df_test.copy())
+            data['residuals'] = residuals
+            sns.pairplot(data=data,
+                  y_vars=['residuals'],
+                  x_vars=x_cols_num)
             plt.show()
+
+           
         self._calibrated_pm25_estimator = best_estimator
 
     def train(
@@ -161,7 +189,7 @@ def calibrate():
     calibration_10sec_df = calibration_data_preprocessor.get_10sec_data()
     calibration_hourly_df = calibration_data_preprocessor.get_hourly_data()
 
-    calibrator = MITDCMRCalibrator()
+    calibrator = MITDCMRCalibrator(plot_results=True)
     calibrator.train(
         dcmr_10sec_df=dcmr_10sec_df,
         dcmr_hourly_df=dcmr_hourly_df,
