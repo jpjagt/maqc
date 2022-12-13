@@ -3,6 +3,9 @@ import matplotlib.pyplot as plt
 import sklearn
 import pandas as pd
 import seaborn as sns
+import statsmodels.api as sm
+import pylab 
+import scipy.stats as stats
 
 from mcs.models import (
     get_linear_regression_model,
@@ -82,7 +85,7 @@ class MITDCMRCalibrator(object):
 
         if self._plot_results:
 
-            # Plot estimated values aganist target variable
+            # Plot estimated values aganist target variable for RF and PM25
             results_df.plot(alpha=0.5)
             plt.legend()
             plt.title(
@@ -93,12 +96,19 @@ class MITDCMRCalibrator(object):
             y_pred = results_df[f"{best_estimator_name} y_pred"]
             y_test = results_df["y_test"]
 
-            # Generate residuals plot for Polynomial model
+            # Generate residuals plot for Polynomial model(PM25)
+            # and RF for NO2
             residuals = y_test - y_pred
             data = pd.DataFrame(best_estimator._df_test.copy())
             data["residuals"] = residuals
             sns.pairplot(data=data, y_vars=["residuals"], x_vars=x_cols)
             plt.show()
+
+            # Generate qq of residuals plot for model PLR (PM25) and RF (NO2)
+            plt.figure()
+            sm.qqplot(residuals, line='45', fit=True, dist=stats.norm)
+            pylab.show()
+
         return best_estimator
 
     def _train_calibrated_pm25_model(self, tensec_df):
