@@ -29,10 +29,13 @@ class MITDCMRCalibrator(object):
     def __init__(
         self,
         plot_results=False,
-        calibration_pm25_model_choices=["polynomial_regression"],
+        component2model_choices={
+            "pm25": ["polynomial_regression"],
+            "no2": ["polynomial_regression"],
+        },
     ):
         self._plot_results = plot_results
-        self._calibration_pm25_model_choices = calibration_pm25_model_choices
+        self._component2model_choices = component2model_choices
         self._has_trained = False
 
     def _get_trained_model(
@@ -43,8 +46,6 @@ class MITDCMRCalibrator(object):
         best_estimator_name = None
         best_r2 = None
         for name, (model, extra_opts) in name2model__estimator_options.items():
-            if name not in self._calibration_pm25_model_choices:
-                continue
             estimator = RegressionEstimator(
                 model=model,
                 df=df,
@@ -135,14 +136,14 @@ class MITDCMRCalibrator(object):
                         {"do_cross_validation": False},
                     ),
                 },
-                self._calibration_pm25_model_choices,
+                self._component2model_choices["pm25"],
             ),
         )
 
-    def _train_calibrated_pm25_model(self, tensec_df):
+    def _train_calibrated_no2_model(self, hourly_df):
         # define columns
         x_cols = [
-            "mit_pm25",
+            "mit_no2_mv",
             "mit_humidity",
             # "knmi_wind_speed_hourly",
             # "knmi_wind_max_gust",
@@ -161,10 +162,12 @@ class MITDCMRCalibrator(object):
         ]
 
         # target variable
-        y_col = "dcmr_PM25"
-        log_encoder = LogEncoder(x_cols_to_encode=["mit_pm25"])
-        self._calibrated_pm25_estimator = self._get_trained_model(
-            tensec_df,
+        y_col = "dcmr_no2"
+        # we take the log of the target variable, but no x cols because we can
+        # just take the raw mv
+        log_encoder = LogEncoder(x_cols_to_encode=[])
+        self._calibrated_no2_estimator = self._get_trained_model(
+            hourly_df,
             estimator_options={
                 "x_cols": x_cols,
                 "y_col": y_col,
@@ -185,7 +188,7 @@ class MITDCMRCalibrator(object):
                         {"do_cross_validation": False},
                     ),
                 },
-                self._calibration_pm25_model_choices,
+                self._component2model_choices["no2"],
             ),
         )
 

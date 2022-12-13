@@ -39,6 +39,7 @@ class InputDataPreprocessor(object):
         ]
         # filter out high rel humidity
         mit_10sec_df = mit_10sec_df[(mit_10sec_df["mit_humidity_mean"] < 90)]
+
         mit_10sec_df = mit_10sec_df.rename(
             columns={
                 "mit_humidity_mean": "mit_humidity",
@@ -72,7 +73,7 @@ class InputDataPreprocessor(object):
             "mit_humidity"
         ].mean(axis=1)
         mit_hourly_df = mit_hourly_df[["mit_no2_mv_mean", "mit_humidity_mean"]]
-        mit_hourly_df.columns = ["mit_no2_mv_mean", "mit_humidity_mean"]
+        mit_hourly_df.columns = ["mit_no2_mv", "mit_humidity"]
 
         knmi_hourly_df = self._knmi_df.asfreq("1h").ffill()
         df = mit_hourly_df.merge(
