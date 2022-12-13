@@ -37,7 +37,7 @@ class DCMRDataLoader(object):
         df.index = pd.to_datetime(df.index)
         df.index.name = "timestamp"
 
-        return df
+        return df.astype(float)
 
     def load_hourly_data(self, experiment_name):
         experiment_dir = DCMR_DATA_DIR / experiment_name

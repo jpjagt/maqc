@@ -31,7 +31,11 @@ class MITDCMRCalibrator(object):
         plot_results=False,
         component2model_choices={
             "pm25": ["polynomial_regression"],
-            "no2": ["polynomial_regression"],
+            "no2": [
+                "linear_regression",
+                "polynomial_regression",
+                "random_forest",
+            ],
         },
     ):
         self._plot_results = plot_results
@@ -39,7 +43,12 @@ class MITDCMRCalibrator(object):
         self._has_trained = False
 
     def _get_trained_model(
-        self, df, estimator_options, name2model__estimator_options
+        self,
+        df,
+        x_cols,
+        y_col,
+        name2model__estimator_options,
+        general_estimator_options={},
     ):
         results_df = None
         best_estimator = None
@@ -49,7 +58,9 @@ class MITDCMRCalibrator(object):
             estimator = RegressionEstimator(
                 model=model,
                 df=df,
-                **estimator_options,
+                x_cols=x_cols,
+                y_col=y_col,
+                **general_estimator_options,
                 **extra_opts,
             )
             estimator.train()
@@ -116,9 +127,9 @@ class MITDCMRCalibrator(object):
         log_encoder = LogEncoder(x_cols_to_encode=["mit_pm25"])
         self._calibrated_pm25_estimator = self._get_trained_model(
             tensec_df,
-            estimator_options={
-                "x_cols": x_cols,
-                "y_col": y_col,
+            x_cols=x_cols,
+            y_col=y_col,
+            general_estimator_options={
                 "encoder": log_encoder,
             },
             name2model__estimator_options=filter_dict_by_keys(
@@ -168,9 +179,9 @@ class MITDCMRCalibrator(object):
         log_encoder = LogEncoder(x_cols_to_encode=[])
         self._calibrated_no2_estimator = self._get_trained_model(
             hourly_df,
-            estimator_options={
-                "x_cols": x_cols,
-                "y_col": y_col,
+            x_cols=x_cols,
+            y_col=y_col,
+            general_estimator_options={
                 "encoder": log_encoder,
             },
             name2model__estimator_options=filter_dict_by_keys(
@@ -226,5 +237,6 @@ class MITDCMRCalibrator(object):
         experiment_hourly_df[
             "no2_calibrated"
         ] = self._calibrated_no2_estimator.predict(experiment_hourly_df)
+        set_inf_and_zero_vals_to_nan(experiment_10sec_df, "no2_calibrated")
 
         return experiment_10sec_df, experiment_hourly_df

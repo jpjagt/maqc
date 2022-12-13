@@ -25,7 +25,9 @@ class InputDataPreprocessor(object):
         )
         mit_10sec_df = mit_10sec_df[["mit_pm25_mean", "mit_humidity_mean"]]
         mit_10sec_df.columns = ["mit_pm25_mean", "mit_humidity_mean"]
-        mit_10sec_df = mit_10sec_df.dropna()
+
+        # drop rows with nan values
+        mit_10sec_df = mit_10sec_df.dropna(how="any")
         # filter out extreme quantiles of pm25
         mit_10sec_df = mit_10sec_df[
             (
@@ -74,6 +76,9 @@ class InputDataPreprocessor(object):
         ].mean(axis=1)
         mit_hourly_df = mit_hourly_df[["mit_no2_mv_mean", "mit_humidity_mean"]]
         mit_hourly_df.columns = ["mit_no2_mv", "mit_humidity"]
+
+        # drop rows without measurements
+        mit_hourly_df = mit_hourly_df.dropna(how="any")
 
         knmi_hourly_df = self._knmi_df.asfreq("1h").ffill()
         df = mit_hourly_df.merge(
