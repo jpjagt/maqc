@@ -21,8 +21,9 @@ CAMERA_DIR = DATA_DIR / "camera"
 CAMERA_IMAGES_DIR = CAMERA_DIR / "images"
 IMG_LABELS_CSV_FPATH = CAMERA_DIR / "img_labels.csv"
 CAMERA_LABEL_TASKS = [
-    "active_vehicles_in_front",
-    "active_vehicles_in_back",
+    # "active_vehicles_in_front",
+    # "active_vehicles_in_back",
+    "nof_active_vehicles"
 ]
 
 EXPERIMENT_START_DATE = "2022-11-07"

@@ -8,7 +8,7 @@ from mcs.constants import (
 )
 
 
-def create_camera_images_csv(start_time="06:15", end_time="17:30"):
+def create_camera_images_csv(start_time="06:15", end_time="16:45"):
     if IMG_LABELS_CSV_FPATH.exists():
         query_yes_no("do you want to overwrite the existing csv?")
 
