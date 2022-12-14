@@ -64,12 +64,14 @@ class InputDataPreprocessor(object):
         return df
 
     def get_hourly_data(self):
-        # take one hour mean from city scanner for NO2 and Humidity to match KNMI
+        # take one hour mean from city scanner for NO2 and humidity to match
+        # DCMR
         mit_hourly_df = (
             self._mit_df[["mit_gas_op2_w", "mit_humidity"]]
             .resample("1h")
             .mean()
         )
+
         # Create new dataframe with hourly values
         mit_hourly_df["mit_no2_mv_mean"] = mit_hourly_df["mit_gas_op2_w"].mean(
             axis=1

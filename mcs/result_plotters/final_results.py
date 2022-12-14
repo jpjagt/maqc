@@ -1,18 +1,20 @@
+from mcs.data_loaders import (
+    CalibratedDataLoader,
+    KNMIDataLoader,
+    UFPDataLoader,
+)
+
 import calendar
 import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt, dates as mdates
 from datetime import time, datetime
 
-from mcs.constants import DATE_FOR_RELATIVE_TIME_OF_DAY
-from mcs.cocreation.mit_data_loader import CocreationMITDataLoader
-from mcs.data_loaders import KNMIDataLoader, UFPDataLoader
+from mcs.constants import DATE_FOR_RELATIVE_TIME_OF_DAY, START_TIME, END_TIME
 from mcs import plot, utils
 
-# this is the range that we want to load
-DEFAULT_MEASUREMENT_RANGE = slice("2022-11-07", "2022-11-28")
 # the experiment name
-DEFAULT_MIT_EXPERIMENT_NAME = "ensemble-site-2022-full"
+DEFAULT_CALIBRATED_DATA_NAME = "final-results"
 DEFAULT_UFP_EXPERIMENT_NAME = "ensemble-site-2022-full"
 # these are the ids of the city scanners
 DEFAULT_MIT_CS_IDS = ["ams1", "ams2", "ams3", "ams4"]
@@ -21,35 +23,26 @@ DEFAULT_MIT_CS_IDS = ["ams1", "ams2", "ams3", "ams4"]
 class PlotsGenerator(object):
     def __init__(
         self,
-        measurement_range=DEFAULT_MEASUREMENT_RANGE,
-        mit_cs_ids=DEFAULT_MIT_CS_IDS,
-        mit_experiment_name=DEFAULT_MIT_EXPERIMENT_NAME,
+        name,
+        tensec_df,
+        hourly_df,
+        knmi_df,
+        ufp_df,
         max_rh_threshold=None,
+        mit_cs_ids=DEFAULT_MIT_CS_IDS,
     ):
-        self._mit_data_loader = CocreationMITDataLoader(
-            measurement_range=measurement_range,
-            experiment_name=mit_experiment_name,
-            cs_ids=mit_cs_ids,
-            max_rh_threshold=max_rh_threshold,
-        )
-        self._knmi_data_loader = KNMIDataLoader()
-        self._ufp_data_loader = UFPDataLoader()
-
         self._max_rh_threshold = max_rh_threshold
         self._mit_cs_ids = mit_cs_ids
+        self._tensec_df = tensec_df
+        self._hourly_df = hourly_df
+        self._knmi_df = knmi_df
+        self._ufp_df = ufp_df
 
         if self._max_rh_threshold:
             suffix = f"_maxrh{self._max_rh_threshold}"
         else:
             suffix = None
-        self._plot_saver = plot.PlotSaver("cocreation", suffix)
-
-    def _load_data(self):
-        self.mit_df, self.mit_df = self._mit_data_loader.load_data()
-        self.knmi_df = self._knmi_data_loader.load_data("240")
-        self.ufp_df = self._ufp_data_loader.load_data(
-            DEFAULT_UFP_EXPERIMENT_NAME, ["sensor1", "sensor2"]
-        )
+        self._plot_saver = plot.PlotSaver(name, suffix)
 
     def _get_full_title(self, title):
         if self._max_rh_threshold:
@@ -59,7 +52,8 @@ class PlotsGenerator(object):
 
     def _plot_daily(self, component, freq="20min", data=None, **kwargs):
         if data is None:
-            data = self.mit_df.reset_index()
+            data = self._tensec_df.reset_index()
+            utils.set_timestamp_related_cols(data)
         ax = plot.tsplot(
             data,
             component,
@@ -76,6 +70,24 @@ class PlotsGenerator(object):
         for ax, col in zip(axs, cols):
             self._plot_daily(col, ax=ax, **kwargs)
 
+    def _plot_vertical_dailies(self):
+        self._plot_multiple_daily(
+            ["pm25_calibrated_nobg", "mit_humidity"],
+            hue_whitelist=["ams1", "ams2"],
+        )
+        self._plot_saver.savefig("daily_pm1_pm25_humidity_for_ams1_ams2")
+
+        # plots split per weekday and weekend
+        self._plot_multiple_daily(
+            ["pm25_calibrated_nobg", "mit_humidity"], hue="is_weekday"
+        )
+        self._plot_saver.savefig("daily_pm1_pm25_humidity_week_vs_weekend")
+
+        self._plot_multiple_daily(
+            ["pm25_calibrated_nobg", "mit_humidity"], hue="day_of_week"
+        )
+        self._plot_saver.savefig("daily_pm1_pm25_humidity_for_days_of_week")
+
     def _plot_daily_no_agg(
         self,
         component,
@@ -85,7 +97,7 @@ class PlotsGenerator(object):
         **kwargs,
     ):
         if data is None:
-            data = self.mit_df.reset_index()
+            data = self._tensec_df.reset_index()
 
         df = (
             data.groupby(
@@ -102,7 +114,7 @@ class PlotsGenerator(object):
             data=df,
             **{
                 "x": "time_of_day",
-                "y": "PM1",
+                "y": "pm25_calibrated_nobg",
                 "hue": "date",
                 "style": "sensor_name",
                 **kwargs,
@@ -115,14 +127,33 @@ class PlotsGenerator(object):
                 self._get_full_title(f"daily {component} patterns per {freq}")
             )
 
-    def _plot_ufp_with_pm1(self, freq="20s"):
-        ufp_df = self.ufp_df.unstack(level=0)[["LDSA"]].resample(freq).mean()
-        mit_df = (
-            self.mit_df.unstack(level=0)[["PM1", "PM25"]].resample(freq).mean()
+    def _plot_pm25_calibrated_nobg_vs_uncalibrated(self):
+        df = (
+            self._tensec_df.loc["ams1", ["mit_pm25", "pm25_calibrated_nobg"]]
+            .rename(
+                columns={
+                    "mit_pm25": "Uncalibrated",
+                    "pm25_calibrated_nobg": "Calibrated",
+                }
+            )
+            .melt(var_name="ams1", value_name="pm25", ignore_index=False)
+        ).reset_index()
+        utils.set_timestamp_related_cols(df)
+        self._plot_daily("pm25", hue="ams1", data=df)
+        self._plot_saver.savefig("pm25_week_vs_weekend")
+
+    def _plot_ufp_with_pm25(self, freq="20s"):
+        ufp_df = self._ufp_df.unstack(level=0)[["LDSA"]].resample(freq).mean()
+        tensec_df = (
+            self._tensec_df.unstack(level=0)[["pm25_calibrated_nobg"]]
+            .resample(freq)
+            .mean()
         )
 
         df = (
-            ufp_df.merge(mit_df, left_index=True, right_index=True, how="left")
+            ufp_df.merge(
+                tensec_df, left_index=True, right_index=True, how="left"
+            )
             .rolling(window=15)
             .mean()
         )
@@ -134,16 +165,14 @@ class PlotsGenerator(object):
                 "2022-11-24",
                 {
                     "LDSA": (0, 100),
-                    "PM1": (0, 20),
-                    "PM25": (0, 70),
+                    "pm25_calibrated_nobg": (0, 70),
                 },
             ),
             (
                 "2022-11-25",
                 {
                     "LDSA": (0, 100),
-                    "PM1": (0, 20),
-                    "PM25": (0, 70),
+                    "pm25_calibrated_nobg": (0, 70),
                 },
             ),
         ]:
@@ -156,10 +185,11 @@ class PlotsGenerator(object):
                 aspect=1.4,
                 height=5,
             )
+            breakpoint()
             g.map_dataframe(sns.lineplot, x="timestamp", y="value")
             g.add_legend()
             plt.suptitle(
-                f"average UFP LDSA (naneos), PM1 and PM2.5 (MIT) per {freq} on {date}"
+                f"mean UFP LDSA (naneos) and PM2.5 (MIT) per {freq} on {date}"
             )
             for component, ax in g.axes_dict.items():
                 ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
@@ -179,13 +209,13 @@ class PlotsGenerator(object):
         plt.figure(figsize=(16, 9))
         ax = plt.gca()
 
-        ams1_df = self.mit_df.loc["ams1"]
+        ams1_df = self._tensec_df.loc["ams1"]
 
         ams1_timestamp2component = (
             ams1_df[component].asfreq("5s").resample("60s").mean()
         )
         ams1_low_rh_timestamp2component = (
-            ams1_df.loc[ams1_df.humidity_corrected < 85, component]
+            ams1_df.loc[ams1_df.mit_humidity < 85, component]
             .asfreq("5s")
             .resample("60s")
             .mean()
@@ -206,6 +236,8 @@ class PlotsGenerator(object):
         plt.legend()
         plt.title(f"{component} from ams1 during entire experiment")
         self._plot_saver.savefig(f"full_{component}/ams1_entire_experiment")
+
+        utils.set_timestamp_related_cols(ams1_df)
 
         for date in ams1_df.date.unique():
             plt.figure(figsize=(16, 9))
@@ -235,8 +267,8 @@ class PlotsGenerator(object):
             )
             for i, hour_end in enumerate(
                 (
-                    self.knmi_df[date_str]
-                    .loc[self.knmi_df[date_str].is_raining.astype(bool)]
+                    self._knmi_df[date_str]
+                    .loc[self._knmi_df[date_str].is_raining.astype(bool)]
                     .index
                 )
             ):
@@ -254,117 +286,37 @@ class PlotsGenerator(object):
             self._plot_saver.savefig(f"full_{component}/ams1_{date_str}")
 
     def _print_working_hours_table(self):
-        ams1_df = self.mit_df.loc["ams1"]
-        ams1_df_day = self.mit_df.loc["ams1"]
-        ams1_df["is_working_hour"] = False
-        ams1_df.loc[ams1_df_day.index, "is_working_hour"] = True
-        print(
-            ams1_df.reset_index()
-            .groupby(["is_working_hour"])[["PM1", "co_mgm3", "no2_mgm3"]]
-            .agg(["mean", "var"])
-            .to_markdown()
-        )
-
-    def _plot_component_per_wind_status(self, component, data=None):
-        if data is None:
-            data = self.mit_df
-
-        df = data.unstack(level=0)[component]
-        df["wind_direction"] = (
-            df.index.to_series().round("H").map(self.knmi_df.wind_direction)
-        )
-        df["wind_speed"] = (
-            df.index.to_series().round("H").map(self.knmi_df.wind_speed_hourly)
-        )
-        rel_df = (
-            df.groupby(["wind_direction", "wind_speed"]).mean().reset_index()
-        )
-
-        fig, axs = plt.subplots(2, 2)
-
-        for ax, sensor_name in zip(axs.ravel(), self._mit_cs_ids):
-            sns.heatmap(
-                ax=ax,
-                data=rel_df.pivot(
-                    index="wind_direction",
-                    columns="wind_speed",
-                    values=sensor_name,
-                ),
+        for df, col in [
+            (self._tensec_df, "pm25_calibrated"),
+            (self._hourly_df, "no2_calibrated"),
+        ]:
+            ams1_df = df.loc["ams1"]
+            ams1_df_day = ams1_df.between_time(START_TIME, END_TIME)
+            ams1_df["is_working_hour"] = False
+            ams1_df.loc[ams1_df_day.index, "is_working_hour"] = True
+            print(
+                ams1_df.reset_index()
+                .groupby(["is_working_hour"])[[col]]
+                .agg(["mean", "var"])
+                .to_markdown()
             )
-            ax.set_title(sensor_name)
-        plt.suptitle(
-            self._get_full_title(
-                f"average {component} per sensor across hourly wind direction & speed (KNMI) during working hours"
-            )
-        )
-
-    def _plot_humidity(self):
-        plt.figure(figsize=(16, 9))
-        mit_df = (
-            self.mit_df["humidity_corrected"]
-            .unstack(level=0)
-            .resample("H")
-            .mean()
-        )
-        knmi_df = self.knmi_df[["relative_humidity"]]
-        knmi_df.columns = ["knmi"]
-        humidity_df = mit_df.merge(knmi_df, left_index=True, right_index=True)
-        ax = plt.gca()
-        humidity_df.plot(ylabel="relative humidity (%)", ax=ax)
-        ax.set_ylim((0, 100))
-        plt.title(
-            self._get_full_title(
-                "average hourly relative humidity of KNMI and of MIT sensors"
-            )
-        )
-        self._plot_saver.savefig("relative_humidity_knmi_vs_sensors")
 
     def generate_plots(self):
         self._plot_saver.rm_existing_plots()
 
-        self._load_data()
-        self._plot_humidity()
         self._plot_vertical_dailies()
 
-        self._plot_daily("PM1", hue="is_weekday")
-        self._plot_saver.savefig("pm1_week_vs_weekend")
-        # self._plot_daily_no_agg(
-        #     "PM1",
-        #     data=self.mit_df[self.mit_df.is_weekday].reset_index(),
-        #     sensor_name_whitelist=["ams1"],
-        #     freq="1min",
-        # )
+        self._plot_daily("pm25_calibrated_nobg", hue="is_weekday")
+        self._plot_saver.savefig("pm25_week_vs_weekend")
 
-        self._plot_daily_no_agg("PM1")
-        self._plot_saver.savefig("pm1_no_aggregation")
+        self._plot_pm25_calibrated_nobg_vs_uncalibrated()
 
-        self._plot_multiple_daily(
-            ["PM1", "humidity_corrected", "temperature"],
-            hue_whitelist=["ams1", "ams2"],
-        )
-        self._plot_saver.savefig(
-            "daily_pm1_humidity_temperature_for_ams1_ams2"
-        )
-
-        self._plot_multiple_daily(
-            ["PM1", "PM25", "humidity_corrected"],
-            hue_whitelist=["ams1", "ams2"],
-        )
-        self._plot_saver.savefig("daily_pm1_pm25_humidity_for_ams1_ams2")
-
-        # plots split per weekday and weekend
-        self._plot_multiple_daily(
-            ["PM1", "PM25", "humidity_corrected"], hue="is_weekday"
-        )
-        self._plot_saver.savefig("daily_pm1_pm25_humidity_week_vs_weekend")
-        self._plot_multiple_daily(
-            ["PM1", "PM25", "humidity_corrected"], hue="day_of_week"
-        )
-        self._plot_saver.savefig("daily_pm1_pm25_humidity_for_days_of_week")
+        self._plot_daily_no_agg("pm25_calibrated_nobg")
+        self._plot_saver.savefig("pm25_no_aggregation")
 
         self._plot_daily_no_agg(
-            "PM1",
-            data=self.mit_df.reset_index(),
+            "pm25_calibrated_nobg",
+            data=self._tensec_df.reset_index(),
             sensor_name_whitelist=["ams1"],
             freq="1min",
             hue="is_weekday",
@@ -372,42 +324,59 @@ class PlotsGenerator(object):
             estimator=None,
         )
         self._plot_saver.savefig(
-            "pm1_no_aggregation_for_ams1_weekday_vs_weekend"
+            "pm25_no_aggregation_for_ams1_weekday_vs_weekend"
         )
 
-        self._plot_ufp_with_pm1()
-        self._plot_component_per_wind_status("PM1")
+        self._plot_ufp_with_pm25()
         self._plot_component_full(
-            "PM1", "µg / m3", ylim=(0, 30), gb_rh=True, display_raining=True
-        )
-        self._plot_component_full(
-            "no2_mgm3",
+            "pm25_calibrated_nobg",
             "µg / m3",
-            ylim=(0.33 * 2, 1.5 * 2),
-            full_ylim=(0.33 * 2, 1.5 * 2),
+            ylim=(0, 30),
+            gb_rh=True,
+            display_raining=True,
         )
-        self._plot_component_full(
-            "co_mgm3",
-            "µg / m3",
-            ylim=(0.33 * 1.2, 1.5 * 1.2),
-            full_ylim=(0.33 * 1.2, 1.5 * 1.2),
-        )
+        # self._plot_component_full(
+        #     "no2_calibrated_nobg",
+        #     "PPM",
+        #     ylim=(0.33 * 2, 1.5 * 2),
+        #     full_ylim=(0.33 * 2, 1.5 * 2),
+        # )
         self._print_working_hours_table()
 
-        self._plot_daily(
-            "no2_mgm3",
-            hue_whitelist=["ams1", "ams2"],
-            data=self.mit_df.reset_index(),
-        )
-        ax = plt.gca()
-        plot.add_vfills_working_hours(
-            ax, [datetime.date(datetime(2000, 1, 1))]
-        )
 
-        ax.set_xlim(
-            [
-                pd.to_datetime(f"{DATE_FOR_RELATIVE_TIME_OF_DAY} 02:00"),
-                pd.to_datetime(f"{DATE_FOR_RELATIVE_TIME_OF_DAY} 22:00"),
-            ]
-        )
-        self._plot_saver.savefig("no2_daily")
+def generate_final_plots(
+    name,
+    calibrated_results_name,
+    knmi_station_code,
+    ufp_experiment_name,
+    ufp_sensors,
+):
+    calibrated_data_loader = CalibratedDataLoader(calibrated_results_name)
+    print("loading calibrated data...")
+    tensec_df = calibrated_data_loader.load_data("10sec")
+    hourly_df = calibrated_data_loader.load_data("hourly")
+    print("loading knmi data...")
+    knmi_df = KNMIDataLoader().load_data(knmi_station_code)
+    print("loading ufp data...")
+    ufp_df = UFPDataLoader().load_data(ufp_experiment_name, ufp_sensors)
+
+    print("initializing PlotsGenerator...")
+    PlotsGenerator(
+        name=name,
+        tensec_df=tensec_df,
+        hourly_df=hourly_df,
+        knmi_df=knmi_df,
+        ufp_df=ufp_df,
+        max_rh_threshold=None,
+        mit_cs_ids=DEFAULT_MIT_CS_IDS,
+    ).generate_plots()
+
+
+if __name__ == "__main__":
+    generate_final_plots(
+        "livinglab",
+        calibrated_results_name="final-data",
+        knmi_station_code="240",
+        ufp_experiment_name="ensemble-site-2022-full",
+        ufp_sensors=["sensor1", "sensor2"],
+    )

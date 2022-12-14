@@ -90,10 +90,24 @@ class UFPDataLoader(object):
         df = df.set_index("timestamp")
         return df
 
-    def load_data(self, experiment_name, device_name):
+    def load_data(self, experiment_name, sensor_name):
+        if isinstance(sensor_name, (list, tuple)):
+            return self._load_data_for_multiple_sensors(
+                experiment_name, sensor_name
+            )
+
         # example path: data/ufp/2022_11_25/sensor1/...
-        data_dir = UFP_DATA_DIR / experiment_name / device_name
+        data_dir = UFP_DATA_DIR / experiment_name / sensor_name
         dfs = [self._read_txt(fpath) for fpath in data_dir.glob("**/*.txt")]
         df = pd.concat(dfs)
-        df = self._preprocess_data(df, device_name)
+        df = self._preprocess_data(df, sensor_name)
         return df
+
+    def _load_data_for_multiple_sensors(self, experiment_name, sensor_names):
+        ufp_device_name2df = {
+            f"ufp_{sensor_name}": self.load_data(experiment_name, sensor_name)
+            for sensor_name in sensor_names
+        }
+        return pd.concat(
+            ufp_device_name2df, names=["sensor_name", "timestamp"]
+        )
