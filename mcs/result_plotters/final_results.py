@@ -54,6 +54,10 @@ class PlotsGenerator(object):
         if data is None:
             data = self._tensec_df.reset_index()
             utils.set_timestamp_related_cols(data)
+            if kwargs.get("hue") == "is_weekday":
+                data.is_weekday = data.is_weekday.map(
+                    {False: "Weekend", True: "Week"}
+                )
         ax = plot.tsplot(
             data,
             component,
@@ -65,7 +69,7 @@ class PlotsGenerator(object):
             )
 
     def _plot_multiple_daily(self, cols, **kwargs):
-        fig, axs = plt.subplots(len(cols), 1, figsize=(8, 4 * len(cols)))
+        fig, axs = plt.subplots(len(cols), 1, figsize=(10, 5 * len(cols)))
 
         for ax, col in zip(axs, cols):
             self._plot_daily(col, ax=ax, **kwargs)
@@ -374,7 +378,7 @@ def generate_final_plots(
 
 if __name__ == "__main__":
     generate_final_plots(
-        "livinglab",
+        name="livinglab",
         calibrated_results_name="final-data",
         knmi_station_code="240",
         ufp_experiment_name="ensemble-site-2022-full",
