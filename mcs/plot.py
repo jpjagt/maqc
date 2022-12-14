@@ -7,12 +7,14 @@ import geopandas as gpd
 from windrose import WindroseAxes
 
 from mcs.constants import (
+    FIGURES_DIR,
     ASSETS_DIR,
     ROOT_DIR,
     DATE_FOR_RELATIVE_TIME_OF_DAY,
     START_TIME,
     END_TIME,
 )
+from mcs.utils import rm_dir_contents, set_timestamp_related_cols
 
 amsterdam_geojson = gpd.read_file(
     str(ASSETS_DIR / "amsterdam_neighbourhoods.geojson")
@@ -150,6 +152,10 @@ def tsplot(
 ):
     x = "time_of_day"
 
+    if x not in data and "timestamp" in data:
+        data = data.copy()
+        set_timestamp_related_cols(data)
+
     if ax is None:
         plt.figure(figsize=(16, 9))
         ax = plt.gca()
@@ -256,3 +262,26 @@ def sensor_active_plot(mit_df):
             color=palette[i],
         )
     ax.set_yticks(range(1, len(sensor_names) + 1), labels=sensor_names)
+
+
+class PlotSaver(object):
+    def __init__(self, name, suffix, skip_save=False):
+        self._name = name
+        self._suffix = suffix
+        self._dir = FIGURES_DIR / self._name
+        self._skip_save = skip_save
+
+    def savefig(self, name):
+        if self._skip_save:
+            return
+        else:
+            if self._suffix:
+                name += self._suffix
+            fname = f"{name}.svg"
+            fpath = self._dir / fname
+            fpath.parent.mkdir(exist_ok=True, parents=True)
+            print(f"[PlotSaver] saving {fname}")
+            plt.savefig(str(fpath))
+
+    def rm_existing_plots(self):
+        rm_dir_contents(self._dir)
