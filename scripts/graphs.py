@@ -3,7 +3,7 @@ from unicodedata import name
 import mcs
 import matplotlib.pyplot as plt
 from mcs.utils import get_ts_df
-import pandas as pd 
+import pandas as pd
 import numpy as np
 from mcs.data_loaders import ggd
 from mcs import plot
@@ -13,19 +13,19 @@ from mcs.constants import (
     GGD_COMPONENTS,
     GGD_AMSTERDAM_STATION_NAMES,
     GGD_AMSTERDAM_STATION_CODES,
-    GGD_AMSTERDAM_STATIONS 
+    GGD_AMSTERDAM_STATIONS,
 )
 
 loader = ggd.GGDDataLoader()
 
-#Load relevant data for plots
+# Load relevant data for plots
 df = loader.load(2021, "PM25")
-df['Einddatumtijd'] =  pd.to_datetime(df['Einddatumtijd'])
+df["Einddatumtijd"] = pd.to_datetime(df["Einddatumtijd"])
 
 # # print(GGD_AMSTERDAM_STATIONS)
-# df2 = pd.DataFrame(GGD_AMSTERDAM_STATIONS, columns = ['code', 'name']) 
+# df2 = pd.DataFrame(GGD_AMSTERDAM_STATIONS, columns = ['code', 'name'])
 # print(df2)
-#  #Extract station code for corresponding station name 
+#  #Extract station code for corresponding station name
 # df3 = df2.set_index('name', inplace=True)
 
 # # def getstationcode(name, df):
@@ -34,7 +34,7 @@ df['Einddatumtijd'] =  pd.to_datetime(df['Einddatumtijd'])
 # #          return df.loc[str(inputid), 'code']
 # #      except:
 # #          return 'No such station'
-      
+
 # # getstationcode('Amsterdam-Vondelpark', df3)
 
 # name_index = df.idx['name'==name]
@@ -51,11 +51,11 @@ df['Einddatumtijd'] =  pd.to_datetime(df['Einddatumtijd'])
 # plt.show()
 
 
-df = get_ts_df(df)
+# df = get_ts_df(df)
 
 start_date_1 = "2021-10-10"
 end_date_1 = "2021-10-10"
-station_codes = ['NL49014']
+station_codes = ["NL49014"]
 df.loc[start_date_1:end_date_1, station_codes].plot()
 plt.show()
 

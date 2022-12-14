@@ -34,7 +34,7 @@ END_TIME = "16:30"
 CALIBRATION_START_DATETIME = "2022-11-29 11:00:00"
 CALIBRATION_END_DATETIME = "2022-12-06 11:00:00"
 
-GGD_YEARS = list(map(str, range(2012, 2022))) + [
+GGD_YEARS = list(map(str, range(2020, 2022))) + [
     "2022_01",
     "2022_02",
     "2022_03",
@@ -43,21 +43,26 @@ GGD_YEARS = list(map(str, range(2012, 2022))) + [
     "2022_06",
     "2022_07",
     "2022_08",
+    "2022_09",
+    "2022_10",
+    "2022_11",
 ]
 
 GGD_COMPONENTS = [
-    "BC",
-    "CO",
-    "H2S",
-    "NH3",
-    "NO",
+    # "BC",
+    # "CO",
+    # "H2S",
+    # "NH3",
+    # "NO",
     "NO2",
     "NOx",
-    "O3",
+    # "O3",
     "PM10",
     "PM25",
-    "SO2",
+    # "SO2",
 ]
+
+GGD_STATION_TYPES = ["verkeer", "achtergrond", "industrie"]
 
 GGD_AMSTERDAM_STATIONS = [
     {"code": "NL49003", "name": "Amsterdam-Nieuwendammerdijk"},
