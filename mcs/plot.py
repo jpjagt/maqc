@@ -197,20 +197,21 @@ def tsplot(
         sd = agg_df["std"]
         cis = (est - sd, est + sd)
         ax.fill_between(
-            xdata, cis[0], cis[1], alpha=0.2, color=color, label=val
+            xdata, cis[0], cis[1], alpha=0.1, color=color, label=val
         )
         ax.plot(xdata, est, color=color)
 
     ax.set_xlabel(x)
     ax.set_ylabel(y)
     ax.margins(x=0)
-    plt.legend()
 
     if x == "time_of_day":
         set_xaxis_format_to_time_of_day(ax, set_xlim=set_xlim)
         add_vfills_working_hours(
             ax, [DATE_FOR_RELATIVE_TIME_OF_DAY], only_weekday=False
         )
+
+    plt.legend()
 
     return ax
 
@@ -245,17 +246,16 @@ def add_vfills_working_hours(ax, dates, only_weekday=True):
         _get_dates_with_timeoffset(END_TIME),
     ):
         if first_loop:
-            label = "working hours"
+            label = "Working hours"
             first_loop = False
         else:
             label = None
         ax.axvspan(
             start_moment,
             end_moment,
-            alpha=0.08,
+            alpha=0.12,
             color="black",
             label=label,
-            zorder=0,
         )
 
 
@@ -318,7 +318,6 @@ class AxPrettifier(object):
         self._ax = ax
 
     def _prettify_label(self, label, set_fn):
-        print("label", label)
         if (pretty_label := self.label2pretty_label.get(label)) is not None:
             unit = self.label2unit.get(label)
             if unit is not None:
@@ -331,7 +330,7 @@ class AxPrettifier(object):
 
 
 class PlotSaver(object):
-    def __init__(self, name, suffix, skip_save=False):
+    def __init__(self, name, suffix=None, skip_save=False):
         self._name = name
         self._suffix = suffix
         self._dir = FIGURES_DIR / self._name
@@ -356,7 +355,8 @@ class PlotSaver(object):
             fpath = self._dir / fname
             fpath.parent.mkdir(exist_ok=True, parents=True)
             print(f"[PlotSaver] saving {fname}")
-            plt.savefig(str(fpath))
+            plt.tight_layout()
+            plt.savefig(str(fpath), bbox_inches="tight")
 
     def rm_existing_plots(self):
         rm_dir_contents(self._dir)

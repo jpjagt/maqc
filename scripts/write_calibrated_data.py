@@ -52,6 +52,7 @@ def write_calibrated_data(
         start_datetime=calibration_start_datetime,
         end_datetime=calibration_end_datetime,
     )
+
     calibration_10sec_df = calibration_data_preprocessor.get_10sec_data()
     calibration_hourly_df = calibration_data_preprocessor.get_hourly_data()
 

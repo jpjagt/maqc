@@ -50,11 +50,21 @@ class PlotsGenerator(object):
 
         return title
 
-    def _plot_daily(self, component, freq="20min", data=None, **kwargs):
+    def _plot_daily(
+        self,
+        component,
+        data=None,
+        freq="20min",
+        **kwargs,
+    ):
         if data is None:
             data = self._tensec_df.reset_index()
             utils.set_timestamp_related_cols(data)
-            if kwargs.get("hue") == "is_weekday":
+
+        if kwargs.get("hue") == "is_weekday":
+            if "is_weekday" not in data:
+                utils.set_timestamp_related_cols(data)
+            if set(data.is_weekday.unique()) == {True, False}:
                 data.is_weekday = data.is_weekday.map(
                     {False: "Weekend", True: "Week"}
                 )
@@ -79,7 +89,7 @@ class PlotsGenerator(object):
             ["pm25_calibrated_nobg", "mit_humidity"],
             hue_whitelist=["ams1", "ams2"],
         )
-        self._plot_saver.savefig("daily_pm1_pm25_humidity_for_ams1_ams2")
+        self._plot_saver.savefig("daily_pm25_and_humidity_for_ams1_ams2")
 
         # plots split per weekday and weekend
         self._plot_multiple_daily(
@@ -144,9 +154,13 @@ class PlotsGenerator(object):
         ).reset_index()
         utils.set_timestamp_related_cols(df)
         self._plot_daily("pm25", hue="ams1", data=df)
-        self._plot_saver.savefig("pm25_week_vs_weekend")
+        self._plot_saver.savefig("pm25_uncalibrated_vs_calibrated")
 
-    def _plot_ufp_with_pm25(self, freq="20s"):
+    def _plot_ufp_with_pm25(
+        self,
+        freq="20s",
+        limit_xaxis_by_component="LDSA",
+    ):
         ufp_df = self._ufp_df.unstack(level=0)[["LDSA"]].resample(freq).mean()
         tensec_df = (
             self._tensec_df.unstack(level=0)[["pm25_calibrated_nobg"]]
@@ -158,11 +172,13 @@ class PlotsGenerator(object):
             ufp_df.merge(
                 tensec_df, left_index=True, right_index=True, how="left"
             )
-            .rolling(window=15)
+            .rolling(window=10)
             .mean()
         )
         df.columns.names = ["component", "sensor_name"]
-        df = df.melt(ignore_index=False)
+        df = df.asfreq(freq).melt(ignore_index=False)
+        # drop all rows without value
+        df = df.dropna(subset=["value"])
 
         for date, component2ylim in [
             (
@@ -180,16 +196,33 @@ class PlotsGenerator(object):
                 },
             ),
         ]:
+            row = "component"
+            x = "timestamp"
+            data_on_date = df.loc[date].reset_index()
+            xlim_bounds = data_on_date.loc[
+                data_on_date.component == limit_xaxis_by_component, x
+            ].agg(["min", "max"])
+            xlim = tuple(
+                (
+                    xlim_bounds[["min", "max"]]
+                    + pd.Series(
+                        {
+                            "min": pd.DateOffset(hours=-1),
+                            "max": pd.DateOffset(hours=1),
+                        }
+                    )
+                ).values
+            )
+
             g = sns.FacetGrid(
-                df.loc[date].reset_index(),
-                row="component",
+                data_on_date,
+                row=row,
                 sharey=False,
                 hue="sensor_name",
-                # xlim=(pd.to_datetime(f"{date} 05:00"), pd.to_datetime(f"{date} 18:00"))
+                xlim=xlim,
                 aspect=1.4,
                 height=5,
             )
-            breakpoint()
             g.map_dataframe(sns.lineplot, x="timestamp", y="value")
             g.add_legend()
             plt.suptitle(
@@ -232,6 +265,7 @@ class PlotsGenerator(object):
         if gb_rh:
             ams1_low_rh_timestamp2component.plot(label="RH < 85", ax=ax)
 
+        utils.set_timestamp_related_cols(ams1_df)
         plot.add_vfills_working_hours(ax, ams1_df.date)
         if full_ylim:
             ax.set_ylim(full_ylim)
@@ -305,8 +339,63 @@ class PlotsGenerator(object):
                 .to_markdown()
             )
 
+    def _generate_infographic_plots(self):
+        # Uncalibrated data vs. Calibrated
+        plt.figure(figsize=(4 * 1.5, 3 * 1.5))
+        ax = plt.gca()
+        df = (
+            self._tensec_df.loc["ams1", ["mit_pm25", "pm25_calibrated"]]
+            .rename(
+                columns={
+                    "mit_pm25": "Uncalibrated (ams1)",
+                    "pm25_calibrated": "Calibrated (ams1)",
+                }
+            )
+            .melt(var_name="variable", value_name="pm25", ignore_index=False)
+        ).reset_index()
+        utils.set_timestamp_related_cols(df)
+        self._plot_daily("pm25", hue="variable", data=df, ax=ax)
+        ax.set_ylim((0, 45))
+        self._plot_saver.savefig("infographic/pm25_uncalibrated_vs_calibrated")
+
+        # Background pollution subtracted, ams1, weekday
+        plt.figure(figsize=(4 * 1.5, 3 * 1.5))
+        ax = plt.gca()
+
+        df = self._tensec_df.loc["ams1"].reset_index()
+        utils.set_timestamp_related_cols(df)
+        df["is_weekday"] = df["is_weekday"].map(
+            {False: "Weekend (ams1)", True: "During week (ams1)"}
+        )
+        self._plot_daily(
+            "pm25_calibrated_nobg", hue="is_weekday", data=df, ax=ax
+        )
+        ax.set_ylim((0, 45))
+        self._plot_saver.savefig(
+            "infographic/pm25_bg_subtracted_ams1_week_vs_weekend"
+        )
+
+        # Background pollution subtracted, hue=sensor
+        plt.figure(figsize=(4 * 1.5, 3 * 1.5))
+        ax = plt.gca()
+
+        df = self._tensec_df.loc[["ams1", "ams3", "ams4"]].reset_index()
+        utils.set_timestamp_related_cols(df)
+        self._plot_daily("pm25_calibrated_nobg", ax=ax, data=df)
+        self._plot_saver.savefig("infographic/pm25_bg_subtracted_per_sensor")
+
     def generate_plots(self):
         self._plot_saver.rm_existing_plots()
+        self._generate_infographic_plots()
+
+        self._plot_daily(
+            "pm25_calibrated_nobg",
+            hue="is_weekday",
+            data=self._tensec_df.loc["ams1"],
+        )
+        self._plot_saver.savefig(
+            "daily_pm25_calibrated_nobg_for_ams1_week_vs_weekend"
+        )
 
         self._plot_vertical_dailies()
 

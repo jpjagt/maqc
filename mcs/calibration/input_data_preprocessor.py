@@ -17,39 +17,38 @@ class InputDataPreprocessor(object):
         self._start_datetime = start_datetime
         self._end_datetime = end_datetime
 
-    def get_10sec_data(self):
-        mit_10sec_df = (
-            self._mit_df[["mit_PM25", "mit_humidity"]].resample("10s").mean()
-        )
-        mit_10sec_df["mit_pm25_mean"] = mit_10sec_df["mit_PM25"].mean(axis=1)
-        mit_10sec_df["mit_humidity_mean"] = mit_10sec_df["mit_humidity"].mean(
-            axis=1
-        )
-        mit_10sec_df = mit_10sec_df[["mit_pm25_mean", "mit_humidity_mean"]]
-        mit_10sec_df.columns = ["mit_pm25_mean", "mit_humidity_mean"]
+    def _preprocess_pm25(self, mit_df):
+        mit_df["mit_pm25_mean"] = mit_df["mit_PM25"].mean(axis=1)
+        mit_df["mit_humidity_mean"] = mit_df["mit_humidity"].mean(axis=1)
+        mit_df = mit_df[["mit_pm25_mean", "mit_humidity_mean"]]
+        mit_df.columns = ["mit_pm25_mean", "mit_humidity_mean"]
 
         # drop rows with nan values
-        mit_10sec_df = mit_10sec_df.dropna(how="any")
+        mit_df = mit_df.dropna(how="any")
         # filter out extreme quantiles of pm25
-        mit_10sec_df = mit_10sec_df[
-            (
-                mit_10sec_df["mit_pm25_mean"]
-                > mit_10sec_df["mit_pm25_mean"].quantile(0.05)
-            )
+        mit_df = mit_df[
+            (mit_df["mit_pm25_mean"] > mit_df["mit_pm25_mean"].quantile(0.05))
             & (
-                mit_10sec_df["mit_pm25_mean"]
-                < mit_10sec_df["mit_pm25_mean"].quantile(0.95)
+                mit_df["mit_pm25_mean"]
+                < mit_df["mit_pm25_mean"].quantile(0.95)
             )
         ]
         # filter out high rel humidity
-        mit_10sec_df = mit_10sec_df[(mit_10sec_df["mit_humidity_mean"] < 90)]
+        mit_df = mit_df[(mit_df["mit_humidity_mean"] < 90)]
 
-        mit_10sec_df = mit_10sec_df.rename(
+        mit_df = mit_df.rename(
             columns={
                 "mit_humidity_mean": "mit_humidity",
                 "mit_pm25_mean": "mit_pm25",
             }
         )
+        return mit_df[["mit_pm25", "mit_humidity"]]
+
+    def get_10sec_data(self):
+        mit_10sec_df = (
+            self._mit_df[["mit_PM25", "mit_humidity"]].resample("10s").mean()
+        )
+        mit_10sec_df = self._preprocess_pm25(mit_10sec_df)
 
         knmi_10sec_df = self._knmi_df.asfreq("10s").ffill()
         df = mit_10sec_df.merge(
@@ -67,7 +66,7 @@ class InputDataPreprocessor(object):
         # take one hour mean from city scanner for NO2 and humidity to match
         # DCMR
         mit_hourly_df = (
-            self._mit_df[["mit_gas_op2_w", "mit_humidity"]]
+            self._mit_df[["mit_PM25", "mit_gas_op2_w", "mit_humidity"]]
             .resample("1h")
             .mean()
         )
@@ -79,8 +78,13 @@ class InputDataPreprocessor(object):
         mit_hourly_df["mit_humidity_mean"] = mit_hourly_df[
             "mit_humidity"
         ].mean(axis=1)
-        mit_hourly_df = mit_hourly_df[["mit_no2_mv_mean", "mit_humidity_mean"]]
-        mit_hourly_df.columns = ["mit_no2_mv", "mit_humidity"]
+        mit_hourly_df["mit_pm25"] = self._preprocess_pm25(mit_hourly_df)[
+            "mit_pm25"
+        ]
+        mit_hourly_df = mit_hourly_df[
+            ["mit_pm25", "mit_no2_mv_mean", "mit_humidity_mean"]
+        ]
+        mit_hourly_df.columns = ["mit_pm25", "mit_no2_mv", "mit_humidity"]
 
         # drop rows without measurements
         mit_hourly_df = mit_hourly_df.dropna(how="any")
