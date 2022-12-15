@@ -2,6 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
+import statsmodels.api as sm
+import pylab
+import scipy.stats as stats
 
 from mcs import plot
 from mcs.models import (
@@ -141,27 +144,35 @@ class MITDCMRCalibrator(object):
                         results_df[source_x_col]
                     )
 
-            # Plot estimated values aganist target variable
-            # results_df.plot(alpha=0.5)
-            # plt.gca().set_ylim(
-            #     (
-            #         results_df.quantile(0.02).min() * 0.9,
-            #         results_df.quantile(0.98).max() * 1.1,
-            #     )
-            # )
-            # plt.legend()
-            # plt.title(
-            #     f"performance of various models. best model: {best_estimator_name}"
-            # )
+            # Plot estimated values aganist target variable for RF and PM25
+            results_df.plot(alpha=0.5)
+            plt.gca().set_ylim(
+                (
+                    results_df.quantile(0.02).min() * 0.9,
+                    results_df.quantile(0.98).max() * 1.1,
+                )
+            )
+            plt.legend()
+            plt.title(
+                f"performance of various models. best model: {best_estimator_name}"
+            )
 
             y_pred = results_df[f"{best_estimator_name} y_pred"]
             y_test = results_df["y_test"]
-            # Generate residuals plot for Polynomial model
+
+            # Generate residuals plot for Polynomial model(PM25)
+            # and RF for NO2
             residuals = y_test - y_pred
             data = pd.DataFrame(best_estimator._df_test.copy())
             data["residuals"] = residuals
             sns.pairplot(data=data, y_vars=["residuals"], x_vars=x_cols)
             plt.show()
+
+            # Generate qq of residuals plot for model PLR (PM25) and RF (NO2)
+            plt.figure()
+            sm.qqplot(residuals, line="45", fit=True, dist=stats.norm)
+            pylab.show()
+
         return best_estimator
 
     def _get_trained_pm25_model(self, df):
