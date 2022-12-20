@@ -136,6 +136,7 @@ class MITDataLoader(object):
             {
                 name: self.load_data(experiment_name, name)
                 for name in sensor_names
-            }
+            },
+            names=["sensor_name", "timestamp"],
         )
         return df

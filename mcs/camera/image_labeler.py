@@ -1,4 +1,3 @@
-import pandas as pd
 import tkinter as tk
 
 from PIL import ImageTk, Image
@@ -6,6 +5,7 @@ from mcs.constants import (
     IMG_LABELS_CSV_FPATH,
     CAMERA_LABEL_TASKS,
 )
+from mcs.data_loaders import CameraImageLabelsDataLoader
 
 # only expose the label_images method
 __all__ = ["label_images"]
@@ -177,12 +177,10 @@ class CameraImageLabeler(tk.Tk):
 
 
 def label_images(
-    img_labels_csv_path=IMG_LABELS_CSV_FPATH,
+    img_labels_csv_name="img_labels",
     display_interval=DEFAULT_DISPLAY_INTERVAL,
 ):
-    images_df = pd.read_csv(
-        img_labels_csv_path, parse_dates=["timestamp"], index_col=False
-    )
+    images_df = CameraImageLabelsDataLoader().load_data(img_labels_csv_name)
     window = CameraImageLabeler(images_df, display_interval)
     window.mainloop()
     # when it's over, save the csv

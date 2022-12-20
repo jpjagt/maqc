@@ -22,7 +22,7 @@ plot.plot_line(
     "mass",
     xlabel="time",
     ylabel="PM0.3 micrograms/m3",
-    title="2022-11-25",
+    title="2022-11-24",
     legend=["sensor1", "sensor2"],
     outliers=(0, 0.99),
 )

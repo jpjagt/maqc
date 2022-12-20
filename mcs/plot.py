@@ -131,13 +131,21 @@ def plot_col_of_multiple_sensors2(dflist, colname):
     plt.ylabel(colname)
 
 
-def set_xaxis_format_to_time_of_day(ax, set_xlim=True):
+def set_xaxis_format_to_time_of_day(
+    ax, set_xlim=True, use_working_hour_boundaries=False
+):
+    if use_working_hour_boundaries:
+        start_time = START_TIME
+        end_time = END_TIME
+    else:
+        start_time = "00:00"
+        end_time = "23:59"
     if set_xlim:
         ax.set_xlim(
             [
-                pd.to_datetime(f"{DATE_FOR_RELATIVE_TIME_OF_DAY} {START_TIME}")
+                pd.to_datetime(f"{DATE_FOR_RELATIVE_TIME_OF_DAY} {start_time}")
                 + pd.DateOffset(minutes=-15),
-                pd.to_datetime(f"{DATE_FOR_RELATIVE_TIME_OF_DAY} {END_TIME}")
+                pd.to_datetime(f"{DATE_FOR_RELATIVE_TIME_OF_DAY} {end_time}")
                 + pd.DateOffset(minutes=15),
             ]
         )
@@ -157,7 +165,7 @@ def tsplot(
         set_timestamp_related_cols(data)
 
     if ax is None:
-        plt.figure(figsize=(16, 9))
+        plt.figure(figsize=(11, 7))
         ax = plt.gca()
 
     if hue is None:
@@ -189,17 +197,21 @@ def tsplot(
         sd = agg_df["std"]
         cis = (est - sd, est + sd)
         ax.fill_between(
-            xdata, cis[0], cis[1], alpha=0.2, color=color, label=val
+            xdata, cis[0], cis[1], alpha=0.1, color=color, label=val
         )
         ax.plot(xdata, est, color=color)
 
     ax.set_xlabel(x)
     ax.set_ylabel(y)
     ax.margins(x=0)
-    plt.legend()
 
     if x == "time_of_day":
         set_xaxis_format_to_time_of_day(ax, set_xlim=set_xlim)
+        add_vfills_working_hours(
+            ax, [DATE_FOR_RELATIVE_TIME_OF_DAY], only_weekday=False
+        )
+
+    plt.legend()
 
     return ax
 
@@ -217,8 +229,12 @@ def windrose(data, wind_direction_col, y_col):
     ax.set_legend()
 
 
-def add_vfills_working_hours(ax, dates):
-    date_unique = pd.Series(dates.unique())
+def add_vfills_working_hours(ax, dates, only_weekday=True):
+    date_unique = pd.to_datetime(pd.Series(np.unique(dates)))
+
+    if only_weekday:
+        # only select week days
+        date_unique = date_unique[date_unique.dt.dayofweek <= 4]
 
     def _get_dates_with_timeoffset(time_str):
         hours, mins = map(int, time_str.split(":"))
@@ -230,22 +246,27 @@ def add_vfills_working_hours(ax, dates):
         _get_dates_with_timeoffset(END_TIME),
     ):
         if first_loop:
-            label = "working hours"
+            label = "Working hours"
             first_loop = False
         else:
             label = None
         ax.axvspan(
-            start_moment, end_moment, alpha=0.1, color="black", label=label
+            start_moment,
+            end_moment,
+            alpha=0.12,
+            color="black",
+            label=label,
         )
 
 
-def sensor_active_plot(mit_df):
+def sensor_active_plot(mit_df, vspan_period2name={}):
+    plt.figure(figsize=(12, 6))
     df = mit_df.index.to_frame().reset_index(drop=True)
     df["is_present"] = True
     sensor_names = list(reversed(sorted(df.sensor_name.unique())))
     df = (
         df.pivot(index="timestamp", columns="sensor_name", values="is_present")
-        .asfreq("5s")
+        .asfreq("10s")
         .fillna(False)
     )
 
@@ -263,15 +284,88 @@ def sensor_active_plot(mit_df):
         )
     ax.set_yticks(range(1, len(sensor_names) + 1), labels=sensor_names)
 
+    # rotate the xticks by 30 degrees
+    plt.xticks(rotation=30)
+
+    for i, (vspan_period, name) in enumerate(vspan_period2name.items()):
+        color = palette[i + len(sensor_names)]
+        ax.axvspan(
+            pd.to_datetime(vspan_period[0]),
+            pd.to_datetime(vspan_period[1]),
+            alpha=0.17,
+            color=color,
+            label=name,
+        )
+        plt.legend()
+
+
+class AxPrettifier(object):
+    label2pretty_label = {
+        "time_of_day": "Time of day",
+        "pm25": "PM2.5",
+        "gas_op2_w": "Raw NO2 signal",
+        "mit_pm25": "Uncalibrated PM2.5",
+        "mit_pm25_nobg": "Uncalibrated PM2.5 minus BG",
+        "pm25_calibrated": "Calibrated PM2.5",
+        "pm25_uncalibrated": "Uncalibrated PM2.5",
+        "pm25_calibrated_nobg": "Calibrated PM2.5 minus BG",
+        "pm25_uncalibrated_nobg": "Uncalibrated PM2.5 minus BG",
+        "no2": "NO2",
+        "humidity": "Relative humidity",
+        "mit_humidity": "Relative humidity",
+        "knmi_relative_humidity": "Relative humidity",
+        "nof_active_vehicles": "# active vehicles",
+    }
+
+    label2unit = {
+        "time_of_day": "HH:MM",
+        "pm25": "µg/m³",
+        "mit_pm25": "µg/m³",
+        "gas_op2_w": "mV",
+        "pm25_calibrated": "µg/m³",
+        "pm25_uncalibrated": "µg/m³",
+        "pm25_calibrated_nobg": "µg/m³",
+        "pm25_uncalibrated_nobg": "µg/m³",
+        "no2": "PPM",
+        "no2_calibrated": "PPM",
+        "no2_calibrated_nobg": "PPM",
+        "humidity": "%",
+        "mit_humidity": "%",
+        "knmi_relative_humidity": "%",
+    }
+
+    def __init__(self, ax):
+        self._ax = ax
+
+    def _prettify_label(self, label, set_fn):
+        if (pretty_label := self.label2pretty_label.get(label)) is not None:
+            unit = self.label2unit.get(label)
+            if unit is not None:
+                pretty_label += f" ({unit})"
+            set_fn(pretty_label)
+
+    def prettify(self):
+        self._prettify_label(self._ax.get_xlabel(), self._ax.set_xlabel)
+        self._prettify_label(self._ax.get_ylabel(), self._ax.set_ylabel)
+
 
 class PlotSaver(object):
-    def __init__(self, name, suffix, skip_save=False):
+    def __init__(self, name, suffix=None, skip_save=False):
         self._name = name
         self._suffix = suffix
         self._dir = FIGURES_DIR / self._name
         self._skip_save = skip_save
 
+    def make_current_plot_pretty(self):
+        axs = plt.gcf().get_axes()
+        if not isinstance(axs, np.ndarray):
+            axs = np.array([axs])
+        for ax in axs.ravel():
+            AxPrettifier(ax).prettify()
+
     def savefig(self, name):
+        self.make_current_plot_pretty()
+
         if self._skip_save:
             return
         else:
@@ -281,7 +375,8 @@ class PlotSaver(object):
             fpath = self._dir / fname
             fpath.parent.mkdir(exist_ok=True, parents=True)
             print(f"[PlotSaver] saving {fname}")
-            plt.savefig(str(fpath))
+            plt.tight_layout()
+            plt.savefig(str(fpath), bbox_inches="tight")
 
     def rm_existing_plots(self):
         rm_dir_contents(self._dir)

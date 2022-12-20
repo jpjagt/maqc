@@ -6,6 +6,20 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error, r2_score
 
 
+class DummyEncoder(object):
+    def encode_X(self, df):
+        return df
+
+    def encode_y(self, series):
+        return series
+
+    def decode_X(self, df):
+        return df
+
+    def decode_y(self, series):
+        return series
+
+
 def split_data(df, x_cols, y_col, train_size=0.8, encoder=None):
     df_train, df_test = train_test_split(
         df, train_size=train_size, test_size=(1 - train_size), random_state=5
@@ -40,7 +54,7 @@ class RegressionEstimator(object):
         self._model = model
         self._do_cross_validation = do_cross_validation
         self._n_folds = n_folds
-        self._encoder = encoder
+        self._encoder = DummyEncoder() if encoder is None else encoder
 
         self._x_cols = x_cols
         (
@@ -72,6 +86,7 @@ class RegressionEstimator(object):
             cv=self._n_folds,
             return_estimator=True,
         )
+        self._results = results
         coefs = []
         intercepts = []
         for i, model in enumerate(results["estimator"]):
