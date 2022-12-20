@@ -77,6 +77,11 @@ def write_calibrated_data(
         experiment_mit_df = MITDataLoader().load_data(
             mit_experiment_name, [sensor_name]
         )
+
+        if sensor_name == "ams1":
+            experiment_mit_df["PM25"] -= 8.18
+            experiment_mit_df.loc[experiment_mit_df["PM25"] < 0, "PM25"] = 0
+
         experiment_data_preprocessor = InputDataPreprocessor(
             experiment_mit_df,
             experiment_knmi_df,
@@ -85,6 +90,7 @@ def write_calibrated_data(
         )
         experiment_10sec_df = experiment_data_preprocessor.get_10sec_data()
         experiment_hourly_df = experiment_data_preprocessor.get_hourly_data()
+
         experiment_10sec_df, experiment_hourly_df = calibrator.calibrate(
             experiment_10sec_df, experiment_hourly_df
         )

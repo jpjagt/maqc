@@ -89,11 +89,16 @@ def set_cols_without_bg(df, col2component):
         if col in df:
 
             def _set_cols(target_name, result):
-                if isinstance(result, pd.DataFrame):
-                    target_name = pd.MultiIndex.from_product(
-                        [[target_name], df[col].columns]
-                    )
-                df[target_name] = result
+                # always set on full index, also if result is a series, because
+                # of consistency with later operations
+                target_name = pd.MultiIndex.from_product(
+                    [[target_name], df[col].columns]
+                )
+                if isinstance(result, pd.Series):
+                    for target_col in target_name:
+                        df[target_col] = result
+                else:
+                    df[target_name] = result
 
             (
                 result,

@@ -86,6 +86,7 @@ class RegressionEstimator(object):
             cv=self._n_folds,
             return_estimator=True,
         )
+        self._results = results
         coefs = []
         intercepts = []
         for i, model in enumerate(results["estimator"]):

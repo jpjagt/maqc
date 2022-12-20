@@ -165,7 +165,7 @@ def tsplot(
         set_timestamp_related_cols(data)
 
     if ax is None:
-        plt.figure(figsize=(16, 9))
+        plt.figure(figsize=(11, 7))
         ax = plt.gca()
 
     if hue is None:
@@ -259,13 +259,14 @@ def add_vfills_working_hours(ax, dates, only_weekday=True):
         )
 
 
-def sensor_active_plot(mit_df):
+def sensor_active_plot(mit_df, vspan_period2name={}):
+    plt.figure(figsize=(12, 6))
     df = mit_df.index.to_frame().reset_index(drop=True)
     df["is_present"] = True
     sensor_names = list(reversed(sorted(df.sensor_name.unique())))
     df = (
         df.pivot(index="timestamp", columns="sensor_name", values="is_present")
-        .asfreq("5s")
+        .asfreq("10s")
         .fillna(False)
     )
 
@@ -283,30 +284,49 @@ def sensor_active_plot(mit_df):
         )
     ax.set_yticks(range(1, len(sensor_names) + 1), labels=sensor_names)
 
+    # rotate the xticks by 30 degrees
+    plt.xticks(rotation=30)
+
+    for i, (vspan_period, name) in enumerate(vspan_period2name.items()):
+        color = palette[i + len(sensor_names)]
+        ax.axvspan(
+            pd.to_datetime(vspan_period[0]),
+            pd.to_datetime(vspan_period[1]),
+            alpha=0.17,
+            color=color,
+            label=name,
+        )
+        plt.legend()
+
 
 class AxPrettifier(object):
     label2pretty_label = {
         "time_of_day": "Time of day",
         "pm25": "PM2.5",
+        "gas_op2_w": "Raw NO2 signal",
         "mit_pm25": "Uncalibrated PM2.5",
         "mit_pm25_nobg": "Uncalibrated PM2.5 minus BG",
         "pm25_calibrated": "Calibrated PM2.5",
         "pm25_uncalibrated": "Uncalibrated PM2.5",
         "pm25_calibrated_nobg": "Calibrated PM2.5 minus BG",
         "pm25_uncalibrated_nobg": "Uncalibrated PM2.5 minus BG",
+        "no2": "NO2",
         "humidity": "Relative humidity",
         "mit_humidity": "Relative humidity",
         "knmi_relative_humidity": "Relative humidity",
+        "nof_active_vehicles": "# active vehicles",
     }
 
     label2unit = {
         "time_of_day": "HH:MM",
         "pm25": "µg/m³",
         "mit_pm25": "µg/m³",
+        "gas_op2_w": "mV",
         "pm25_calibrated": "µg/m³",
         "pm25_uncalibrated": "µg/m³",
         "pm25_calibrated_nobg": "µg/m³",
         "pm25_uncalibrated_nobg": "µg/m³",
+        "no2": "PPM",
         "no2_calibrated": "PPM",
         "no2_calibrated_nobg": "PPM",
         "humidity": "%",

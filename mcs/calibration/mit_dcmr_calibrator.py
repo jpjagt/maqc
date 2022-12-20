@@ -28,26 +28,41 @@ def filter_dict_by_keys(dic, keys):
 
 
 def plot_predicted_vs_target_vals(
-    estimator, source_x_col, y_col, component, ylim=None, plot_kwargs={}
+    estimator,
+    source_x_col,
+    y_col,
+    component,
+    ylim=None,
+    display_predicted=True,
+    title=None,
+    plot_kwargs={},
+    secondary_y_label=None,
 ):
     # plt.figure(figsize=(4 * 1.5, 3 * 1.5))
-    plt.figure(figsize=(16, 9))
+    plt.figure(figsize=(12, 8))
     ax = plt.gca()
     df = estimator._df_train.sort_index()
     df_decoded = estimator._encoder.decode_X(df)
     plot_df = pd.DataFrame(index=df.index)
     plot_df["Actual (DCMR)"] = estimator._encoder.decode_y(df[y_col])
-    plot_df["Predicted"] = estimator.predict(df_decoded)
+    if display_predicted:
+        plot_df["Predicted"] = estimator.predict(df_decoded)
     plot_df["Raw (MIT)"] = df_decoded[source_x_col]
     # plot_df = plot_df.rolling(window=80).mean().asfreq("10s")
     plot_df.plot(ax=ax, alpha=0.8, **plot_kwargs)
     component_pretty = plot.AxPrettifier.label2pretty_label.get(
         component, component
     )
-    plt.title(f"Predicted vs target {component_pretty}.")
-    plt.legend()
+    if title is None:
+        plt.title(f"Predicted vs target {component_pretty}.")
+    else:
+        plt.title(title)
     ax.set_ylabel(component)
     ax.set_xlabel("Calibration period")
+
+    if plot_kwargs.get("secondary_y") and secondary_y_label:
+        ax.right_ax.set_ylabel(secondary_y_label)
+
     if ylim:
         ax.set_ylim(ylim)
     plot.PlotSaver("calibration").savefig(
@@ -68,7 +83,7 @@ class MITDCMRCalibrator(object):
                 # "random_forest",
             ],
             "no2": [
-                # "linear_regression",
+                "linear_regression",
                 "polynomial_regression",
                 # "random_forest",
             ],
@@ -98,7 +113,7 @@ class MITDCMRCalibrator(object):
                 df.plot.scatter(x=source_x_col, y=y_col)
                 plt.xlabel(source_x_col)
                 plt.ylabel(y_col)
-                plt.show()
+                # plt.show()
         for name, (model, extra_opts) in name2model__estimator_options.items():
             estimator = RegressionEstimator(
                 model=model,
@@ -166,12 +181,12 @@ class MITDCMRCalibrator(object):
             data = pd.DataFrame(best_estimator._df_test.copy())
             data["residuals"] = residuals
             sns.pairplot(data=data, y_vars=["residuals"], x_vars=x_cols)
-            plt.show()
 
             # Generate qq of residuals plot for model PLR (PM25) and RF (NO2)
             plt.figure()
             sm.qqplot(residuals, line="45", fit=True, dist=stats.norm)
-            pylab.show()
+            plt.show()
+            # pylab.show()
 
         return best_estimator
 
@@ -230,16 +245,16 @@ class MITDCMRCalibrator(object):
     def _train_calibrated_no2_model(self, hourly_df):
         # define columns
         x_cols = [
-            # "mit_no2_mv",
-            "mit_humidity",
+            "mit_no2_mv",
+            # "mit_humidity",
             # "knmi_wind_speed_hourly",
             # "knmi_wind_max_gust",
-            "knmi_temperature",
+            # "knmi_temperature",
             # "knmi_sunshine_duration",
             # "knmi_global_radiation",
             # "knmi_precipitation_duration",
             # "knmi_precipitation_hourly",
-            "knmi_air_pressure",
+            # "knmi_air_pressure",
             # "knmi_relative_humidity",
             # "knmi_is_foggy",
             # "knmi_is_raining",
@@ -278,6 +293,18 @@ class MITDCMRCalibrator(object):
                 },
                 self._component2model_choices["no2"],
             ),
+        )
+
+        plot_predicted_vs_target_vals(
+            self._calibrated_no2_estimator,
+            "mit_no2_mv",
+            "dcmr_no2",
+            "no2",
+            # ylim=(3.4, 65),
+            display_predicted=False,
+            plot_kwargs={"secondary_y": "Raw (MIT)"},
+            title="Raw vs actual NO2",
+            secondary_y_label="Raw NO2 signal (mV)",
         )
 
     def _train_calibrated_pm25_model_10sec(self, tensec_df):
@@ -327,6 +354,25 @@ class MITDCMRCalibrator(object):
             "pm25_calibrated"
         ] = self._calibrated_pm25_estimator_10sec.predict(experiment_10sec_df)
         set_inf_and_zero_vals_to_nan(experiment_10sec_df, "pm25_calibrated")
+
+        models = self._calibrated_pm25_estimator_10sec._results["estimator"]
+        df_encoded = self._calibrated_pm25_estimator_10sec._encoder.encode_X(
+            experiment_10sec_df
+        )
+        X = df_encoded[self._calibrated_pm25_estimator_10sec._x_cols].values
+        X = self._calibrated_pm25_estimator_10sec._scaler.transform(X)
+        # for i, model in enumerate(models):
+        #     experiment_10sec_df[f"pm25_pred_{i}"] = model.predict(X)
+        # experiment_10sec_df[
+        #     [
+        #         "pm25_pred_0",
+        #         "pm25_pred_1",
+        #         "pm25_pred_2",
+        #         "pm25_pred_3",
+        #         "pm25_pred_4",
+        #     ]
+        # ].plot(alpha=0.8)
+        # plt.show()
 
         # hourly
         experiment_hourly_df[

@@ -5,4 +5,5 @@ from mcs.data_loaders.knmi import KNMIDataLoader
 from mcs.data_loaders.ufp import UFPDataLoader
 from mcs.data_loaders.dcmr import DCMRDataLoader
 from mcs.data_loaders.camera_images import CameraImagesDataLoader
+from mcs.data_loaders.camera_image_labels import CameraImageLabelsDataLoader
 from mcs.data_loaders.calibrated import CalibratedDataLoader

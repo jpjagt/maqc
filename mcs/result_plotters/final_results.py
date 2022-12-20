@@ -1,16 +1,28 @@
 from mcs.data_loaders import (
     CalibratedDataLoader,
     KNMIDataLoader,
+    CameraImageLabelsDataLoader,
     UFPDataLoader,
+    MITDataLoader,
+    GGDDataLoader,
 )
 
+import numpy as np
 import calendar
 import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt, dates as mdates
 from datetime import time, datetime
 
-from mcs.constants import DATE_FOR_RELATIVE_TIME_OF_DAY, START_TIME, END_TIME
+from mcs.constants import (
+    DATE_FOR_RELATIVE_TIME_OF_DAY,
+    START_TIME,
+    END_TIME,
+    EXPERIMENT_START_DATE,
+    EXPERIMENT_END_DATE,
+    CALIBRATION_START_DATETIME,
+    CALIBRATION_END_DATETIME,
+)
 from mcs import plot, utils
 
 # the experiment name
@@ -24,19 +36,23 @@ class PlotsGenerator(object):
     def __init__(
         self,
         name,
+        mit_df,
         tensec_df,
         hourly_df,
         knmi_df,
         ufp_df,
+        camera_image_labels_df=None,
         max_rh_threshold=None,
         mit_cs_ids=DEFAULT_MIT_CS_IDS,
     ):
         self._max_rh_threshold = max_rh_threshold
         self._mit_cs_ids = mit_cs_ids
+        self._mit_df = mit_df
         self._tensec_df = tensec_df
         self._hourly_df = hourly_df
         self._knmi_df = knmi_df
         self._ufp_df = ufp_df
+        self._camera_image_labels_df = camera_image_labels_df
 
         if self._max_rh_threshold:
             suffix = f"_maxrh{self._max_rh_threshold}"
@@ -123,7 +139,7 @@ class PlotsGenerator(object):
         if sensor_name_whitelist:
             df = df[df.sensor_name.isin(sensor_name_whitelist)]
         utils.set_timestamp_related_cols(df)
-        plt.figure(figsize=(16, 9))
+        plt.figure(figsize=(11, 7))
         ax = sns.lineplot(
             data=df,
             **{
@@ -243,7 +259,7 @@ class PlotsGenerator(object):
         display_raining=False,
         full_ylim=None,
     ):
-        plt.figure(figsize=(16, 9))
+        plt.figure(figsize=(11, 7))
         ax = plt.gca()
 
         ams1_df = self._tensec_df.loc["ams1"]
@@ -263,22 +279,27 @@ class PlotsGenerator(object):
             alpha=main_alpha, label="all values", ax=ax
         )
         if gb_rh:
-            ams1_low_rh_timestamp2component.plot(label="RH < 85", ax=ax)
+            ams1_low_rh_timestamp2component.plot(
+                label="relative humidity < 85", ax=ax
+            )
 
         utils.set_timestamp_related_cols(ams1_df)
         plot.add_vfills_working_hours(ax, ams1_df.date)
         if full_ylim:
             ax.set_ylim(full_ylim)
-        ax.set_ylabel(component_unit)
-
+        ax.set_ylabel(component)
+        ax.set_xlabel("Date")
+        component_pretty = plot.AxPrettifier.label2pretty_label.get(
+            component, component
+        )
         plt.legend()
-        plt.title(f"{component} from ams1 during entire experiment")
+        plt.title(f"{component_pretty} for AMS1 over entire experiment")
         self._plot_saver.savefig(f"full_{component}/ams1_entire_experiment")
 
         utils.set_timestamp_related_cols(ams1_df)
 
         for date in ams1_df.date.unique():
-            plt.figure(figsize=(16, 9))
+            plt.figure(figsize=(11, 7))
             ax = plt.gca()
 
             date_str = date.strftime("%Y-%m-%d")
@@ -326,6 +347,7 @@ class PlotsGenerator(object):
     def _print_working_hours_table(self):
         for df, col in [
             (self._tensec_df, "pm25_calibrated"),
+            (self._tensec_df, "pm25_calibrated_nobg"),
             (self._hourly_df, "no2_calibrated"),
         ]:
             ams1_df = df.loc["ams1"]
@@ -339,9 +361,34 @@ class PlotsGenerator(object):
                 .to_markdown()
             )
 
+    def _plot_sensor_coverage(self):
+        plot.sensor_active_plot(
+            self._mit_df,
+            vspan_period2name={
+                (
+                    EXPERIMENT_START_DATE,
+                    EXPERIMENT_END_DATE,
+                ): "Experiment period",
+                (
+                    CALIBRATION_START_DATETIME,
+                    CALIBRATION_END_DATETIME,
+                ): "Calibration period",
+            },
+        )
+        plt.gca().set_xlim(
+            (
+                pd.to_datetime(EXPERIMENT_START_DATE).floor("d"),
+                pd.to_datetime(CALIBRATION_END_DATETIME).ceil("d"),
+            )
+        )
+        plt.title(
+            "Measurement coverage per sensor during experiment + calibration"
+        )
+        self._plot_saver.savefig("sensor_coverage")
+
     def _generate_infographic_plots(self):
         # Uncalibrated data vs. Calibrated
-        plt.figure(figsize=(4 * 1.5, 3 * 1.5))
+        plt.figure(figsize=(4 * 1.8, 3 * 1.8))
         ax = plt.gca()
         df = (
             self._tensec_df.loc["ams1", ["mit_pm25", "pm25_calibrated"]]
@@ -359,7 +406,7 @@ class PlotsGenerator(object):
         self._plot_saver.savefig("infographic/pm25_uncalibrated_vs_calibrated")
 
         # Background pollution subtracted, ams1, weekday
-        plt.figure(figsize=(4 * 1.5, 3 * 1.5))
+        plt.figure(figsize=(4 * 1.8, 3 * 1.8))
         ax = plt.gca()
 
         df = self._tensec_df.loc["ams1"].reset_index()
@@ -376,7 +423,7 @@ class PlotsGenerator(object):
         )
 
         # Background pollution subtracted, hue=sensor
-        plt.figure(figsize=(4 * 1.5, 3 * 1.5))
+        plt.figure(figsize=(4 * 1.8, 3 * 1.8))
         ax = plt.gca()
 
         df = self._tensec_df.loc[["ams1", "ams3", "ams4"]].reset_index()
@@ -420,6 +467,48 @@ class PlotsGenerator(object):
             "pm25_no_aggregation_for_ams1_weekday_vs_weekend"
         )
 
+        data = (
+            self._mit_df.reset_index(level=0).copy().resample("60min").mean()
+        )
+        # ggd_no2 = GGDDataLoader().load_all("NO2")['NL49021']
+        # pd.DataFrame({"gas_op2_w": ggd_no2, 'GGD (NL49021)'
+        # data[("gas_op2_w", )] =
+        # self._plot_daily(
+        #     "gas_op2_w",
+        #     data=data.reset_index(),
+        #     freq="60min",
+        #     # secondary_y=("gas_op2_w", "GGD (NL49021)"),
+        # )
+        # self._plot_saver.savefig("daily_raw_no2_signals_during_experiment")
+
+        raw_no2_per_2min = (
+            self._mit_df.reset_index(level=0)
+            .resample("2min")
+            .gas_op2_w.mean()
+            .asfreq("2min")
+        )
+        camera_image_labels_df = self._camera_image_labels_df.copy().set_index(
+            "timestamp"
+        )
+        camera_image_labels_df["gas_op2_w"] = raw_no2_per_2min
+        plt.figure(figsize=(11, 7))
+        ax = (
+            camera_image_labels_df.reset_index()
+            .pivot(
+                index="timestamp",
+                columns="nof_active_vehicles",
+                values="gas_op2_w",
+            )
+            .drop(columns=[np.nan])
+            .rename(columns=int)
+            .plot.box()
+        )
+        ax.set_ylim((250, 530))
+        plt.title("Distribution of mean raw NO2 per # of active vehicles")
+        ax.set_ylabel("gas_op2_w")
+        ax.set_xlabel("nof_active_vehicles")
+        self._plot_saver.savefig("raw_no2_per_nof_active_vehicles")
+
         self._plot_ufp_with_pm25()
         self._plot_component_full(
             "pm25_calibrated_nobg",
@@ -431,19 +520,22 @@ class PlotsGenerator(object):
         # self._plot_component_full(
         #     "no2_calibrated_nobg",
         #     "PPM",
-        #     ylim=(0.33 * 2, 1.5 * 2),
-        #     full_ylim=(0.33 * 2, 1.5 * 2),
+        #     ylim=(0.33 * 2, 1.8 * 2),
+        #     full_ylim=(0.33 * 2, 1.8 * 2),
         # )
         self._print_working_hours_table()
 
 
 def generate_final_plots(
     name,
+    mit_experiment_name,
+    mit_cs_ids,
     calibrated_results_name,
     knmi_station_code,
     ufp_experiment_name,
     ufp_sensors,
 ):
+    mit_df = MITDataLoader().load_data(mit_experiment_name, mit_cs_ids)
     calibrated_data_loader = CalibratedDataLoader(calibrated_results_name)
     print("loading calibrated data...")
     tensec_df = calibrated_data_loader.load_data("10sec")
@@ -452,22 +544,29 @@ def generate_final_plots(
     knmi_df = KNMIDataLoader().load_data(knmi_station_code)
     print("loading ufp data...")
     ufp_df = UFPDataLoader().load_data(ufp_experiment_name, ufp_sensors)
+    camera_image_labels_df = CameraImageLabelsDataLoader().load_data(
+        "img_labels_15-28nov"
+    )
 
     print("initializing PlotsGenerator...")
     PlotsGenerator(
         name=name,
+        mit_df=mit_df,
         tensec_df=tensec_df,
         hourly_df=hourly_df,
         knmi_df=knmi_df,
         ufp_df=ufp_df,
+        camera_image_labels_df=camera_image_labels_df,
         max_rh_threshold=None,
-        mit_cs_ids=DEFAULT_MIT_CS_IDS,
+        mit_cs_ids=mit_cs_ids,
     ).generate_plots()
 
 
 if __name__ == "__main__":
     generate_final_plots(
         name="livinglab",
+        mit_experiment_name="final-city-scanner-data",
+        mit_cs_ids=["ams1", "ams2", "ams3", "ams4"],
         calibrated_results_name="final-data",
         knmi_station_code="240",
         ufp_experiment_name="ensemble-site-2022-full",
