@@ -8,36 +8,103 @@
       href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css"
       rel="stylesheet"
     />
+    <link rel="stylesheet" href="style.css" />
   </head>
-  <body class="bg-white text-black font-sans">
-    <div class="container mx-auto px-4 py-8">
-      <h1 class="text-3xl font-bold mb-8 mt-16">
-        Measuring Construction Sites
-      </h1>
-      <p class="text-lg leading-loose">
-        We are MADE MSc students at AMS Institute in Amsterdam. In collaboration
-        with the MIT Senseable City Lab, we did a research project, which
-        focused on using low-cost sensors called City Scanners to measure air
-        quality around construction sites. However, we encountered a number of
-        practical hurdles that made it difficult to produce reliable results. As
-        a result, we have created a guideline for other professionals and
-        researchers who want to conduct similar experiments in the future,
-        outlining the challenges we faced and offering suggestions for how to
-        overcome them.
-      </p>
-      <div class="flex justify-center space-x-12 mt-12 md:justify-start">
-        <a
-          class="px-6 py-3 bg-blue-700 text-white font-bold rounded-xl w-52 text-center"
-          href="#"
-          >Our guidelines</a
-        >
+  <body class="bg-bg text-black font-sans">
+    <!-- <div class="video-container">
+         <video autoplay muted loop>
+         <source src="site/public/construction-timelapse.mp4" type="video/mp4" />
+         </video>
+         </div> -->
 
-        <a
-          class="px-6 py-3 bg-blue-700 text-white font-bold rounded-xl w-52 text-center"
-          href="https://github.com/jpjagt/measuring-construction-sites"
-          >Our code</a
-        >
+    <div class="container mx-auto px-4 md:px-18 lg:px-48">
+      <h1
+        id="maqc"
+        class="text-8xl font-bold mb-8 mt-4 text-primary tracking-wider text-center"
+      >
+        MAQC
+      </h1>
+      <h2 class="text-2xl mb-8 text-primary tracking-wide text-center">
+        a toolkit to facilitate Measuring Air Quality from Construction
+      </h2>
+      <div class="grid-main">
+        <div class="item-0 card card-cream">
+          <div class="card-body">
+            <p class="text-md leading-loose">
+              We are MADE MSc students at AMS Institute in Amsterdam. In
+              collaboration with the MIT Senseable City Lab, we did a research
+              project, which focused on using low-cost sensors called City
+              Scanners to measure air quality around construction sites.
+              However, we encountered a number of practical hurdles that made it
+              difficult to produce reliable results. As a result, we have
+              created a guideline for other professionals and researchers who
+              want to conduct similar experiments in the future, outlining the
+              challenges we faced and offering suggestions for how to overcome
+              them.
+            </p>
+          </div>
+        </div>
+
+        <a href="#">
+          <div class="item-1 card card-button h-full w-full">
+            <h4 class="text-xl font-bold">Our guidebook</h4>
+          </div>
+        </a>
+
+        <a href="https://github.com/jpjagt/maqc">
+          <div class="item-1 card card-button h-full w-full">
+            <h4 class="text-xl font-bold">Our code</h4>
+          </div>
+        </a>
+      </div>
+
+      <div class="h-40"></div>
+
+      <h2 class="text-3xl mb-16 text-primary tracking-wide text-center">
+        Why measure air quality?
+      </h2>
+
+      <div class="grid-why">
+        <div class="item-0 pr-24">
+          <h3 class="text-xl mb-3 text-primary">
+            “Meten is weten” (To measure is to know)
+          </h3>
+
+          <p class="mb-9">
+            Construction companies are increasingly aware of their social
+            responsibility as well as economic incentives to minimize
+            pollutants. However, prioritizing interventions when investment
+            costs are high can be difficult. Implementing low-cost sensors
+            on-site or on your machinery could inform sustainable investment
+            decisions.
+          </p>
+
+          <h3 class="text-xl mb-3 text-primary">Healthy work environment</h3>
+
+          <p class="mb-9">
+            Creating a healthy work environment for construction workers is
+            important. Measuring on-site, and especially on-person, allows
+            workers to measure their direct exposure to pollutants. This
+            information can be used to improve the working conditions.
+          </p>
+
+          <h3 class="text-xl mb-3 text-primary">
+            Competitive advantage in tenders
+          </h3>
+
+          <p>
+            There is increasing attention to sustainability measurements in the
+            construction sector from the government and the media. Therefore, if
+            you can demonstrate that you apply sustainable building practices,
+            it will give you a comparative advantage over other contractors in
+            tender processes.
+          </p>
+        </div>
+
+        <div class="item-1 card bg-image-exhaust"></div>
       </div>
     </div>
+
+    <div class="h-72"></div>
   </body>
 </html>
