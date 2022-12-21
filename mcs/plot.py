@@ -50,6 +50,7 @@ def plot_line(
     ylabel=None,
     legend=None,
     title=None,
+    datefmt=None,
     outliers=None,
     outfile=None,
 ):
@@ -87,8 +88,10 @@ def plot_line(
         ax.legend(legend)
     if title:
         ax.set_title(title)
-
-    if outfile != None:
+    if datefmt:
+        ax.xaxis.set_major_formatter(mdates.DateFormatter(datefmt))
+        ax.xaxis.set_minor_formatter(mdates.DateFormatter(datefmt))
+    if outfile:
         fig.savefig(str(ROOT_DIR / ("exports/" + outfile + ".svg")))
     fig.show()
 

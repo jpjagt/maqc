@@ -1,0 +1,238 @@
+#+TITLE: UFP data analysis
+#+AUTHOR: Jonas van der Ham | MSc MADE
+#+EMAIL: Jonasvdham@gmail.com
+#+DATE: Monday, 19 December 2022
+#+STARTUP: showall
+#+PROPERTY: header-args :exports both :session ufp :cache no :results hide
+:PROPERTIES:
+#+OPTIONS: ^:nil
+#+LATEX_COMPILER: xelatex
+#+LATEX_CLASS: article
+#+LATEX_CLASS_OPTIONS: [logo, color, author]
+#+LATEX_HEADER: \insertauthor
+#+LATEX_HEADER: \usepackage{minted}
+#+LATEX_HEADER: \usepackage[style=ieee, citestyle=numeric-comp, isbn=false]{biblatex}
+#+LATEX_HEADER: \addbibresource{~/made/bibliography/references.bib}
+#+LATEX_HEADER: \setminted{bgcolor=WhiteSmoke}
+#+OPTIONS: toc:nil
+:END:
+
+* Introduction
+
+This file analyses the data from 2 days of UFP measurements on the construction
+site, on the 24th and 25th of October 2022.
+
+#+begin_src python
+from mcs.data_loaders import UFPDataLoader
+from matplotlib import pyplot as plt
+from mcs import plot
+import pandas as pd
+
+loader = UFPDataLoader()
+df1 = loader.load_data("2022_11_24", "sensor1")
+df2 = loader.load_data("2022_11_24", "sensor2")
+df3 = loader.load_data("2022_11_25", "sensor1")
+df4 = loader.load_data("2022_11_25", "sensor2")
+#+end_src
+
+#+RESULTS:
+
+
+* Plots
+
+** General
+
+A general comparison of the data for both days:
+
+#+begin_src python
+plot.plot_line(
+    [df1, df2],
+    "mass",
+    xlabel="time",
+    ylabel="PM0.3 (µg/m³)",
+    title="2022-11-24 UFP measurements",
+    legend=["sensor1", "sensor2"],
+    datefmt="%H:%M",
+    outfile="2022-11-24_UFP_measurements"
+)
+plot.plot_line(
+    [df3, df4],
+    "mass",
+    xlabel="time",
+    ylabel="PM0.3 (µg/m³)",
+    title="2022-11-25 UFP measurements",
+    legend=["sensor1", "sensor2"],
+    datefmt="%H:%M",
+    outfile="2022-11-25_UFP_measurements"
+)
+#+end_src
+
+#+RESULTS:
+: None
+
+An interesting note is that the sensors were co-located on the 24th of October
+but that sensor1 was placed at ~0.5m height and sensor 2 was placed at ~2m
+height. The resulting readings for sensors 2 are significantly higher than
+those for sensor 1, as can be seen in the graphs above and the table below:
+
+|--------+-----------+------------|
+| sensor |      UFP1 |       UFP2 |
+|--------+-----------+------------|
+| mean   |  1.196347 |   2.037480 |
+| std    |  1.162626 |   2.938176 |
+| min    |  0.082000 |   0.094000 |
+| 25%    |  0.593500 |   0.882500 |
+| 50%    |  0.967000 |   1.469000 |
+| 75%    |  1.512000 |   2.345500 |
+| max    | 29.562000 | 120.734000 |
+|--------+-----------+------------|
+
+#+begin_src python
+df1['mass'].describe()
+df2['mass'].describe()
+#+end_src
+
+** Not co-located
+
+The first plot here shows the data from the 2 sensors when they weren't
+co-located. More inconsistencies can be seen and spikes can be attributed to
+trucks/excavators passing by 1 of the 2 sensors. Interestingly there is no
+clear increase in UFP after the construction started around 6:30 in the second plot.
+
+#+begin_src python
+# experiments when they weren't co-located
+plot.plot_line(
+    [
+        df1["2022-11-24 06:47:00":"2022-11-24 07:13:00"],
+        df2["2022-11-24 06:47:00":"2022-11-24 07:13:00"],
+    ],
+    "mass",
+    xlabel="time",
+    ylabel="PM0.3 (µg/m³)",
+    title="2022-11-24",
+    datefmt="%H:%M",
+    legend=["sensor1", "sensor2"],
+    outliers=(0, 0.99),
+)
+
+# before construction started vs when started
+plot.plot_line(
+    [
+        df1["2022-11-24 06:18:00":"2022-11-24 06:47:00"],
+        df2["2022-11-24 06:18:00":"2022-11-24 06:47:00"],
+    ],
+    "mass",
+    xlabel="time",
+    ylabel="PM0.3 (µg/m³)",
+    title="2022-11-24",
+    datefmt="%H:%M",
+    legend=["sensor1", "sensor2"],
+    outfile="2022-11-24_before_activities"
+)
+#+end_src
+
+#+RESULTS:
+: None
+
+
+** Coffee break
+
+One artefact in the first 'general' plot, is a consistent dip in the
+measurements between 9:30 and 10:00. This can be explained by the fact that all
+workers went on their coffee break during this time and machines were left
+idling. Even though engines were still on, the fact that the machines weren't
+being used shows in the UFP readings during that period. The plots below single
+out this artefact, showing it very clearly.
+
+
+#+begin_src python
+# mean particle counts
+# 24-11-2022
+# coffee break 9:30-10:00 (20795, 13991)
+print(
+    df1[df1["number"] < 1e6]["number"][
+    "2022-11-24 09:30:00":"2022-11-24 10:00:00"
+].mean(),
+    df2[df2["number"] < 1e6]["number"][
+    "2022-11-24 09:30:00":"2022-11-24 10:00:00"
+].mean(),)
+# after break 10:00-11:00 (35038, 43040)
+print(
+    df1[df1["number"] < 1e6]["number"][
+    "2022-11-24 10:00:00":"2022-11-24 11:00:00"
+].mean(),
+    df2[df2["number"] < 1e6]["number"][
+    "2022-11-24 10:00:00":"2022-11-24 11:00:00"
+].mean(),)
+# before the break 9:00-9:30 (26528, 25897)
+print(
+    df1[df1["number"] < 1e6]["number"][
+    "2022-11-24 9:00:00":"2022-11-24 09:30:00"
+].mean(),
+    df2[df2["number"] < 1e6]["number"][
+    "2022-11-24 9:00:00":"2022-11-24 09:30:00"
+].mean(),)
+
+# 25-11-2022
+# coffee break 9:30-10:00 (20926, 24935)
+print(
+    df3[df3["number"] < 1e6]["number"][
+        "2022-11-25 09:30:00":"2022-11-25 10:00:00"
+    ].mean(),
+    df4[df4["number"] < 1e6]["number"][
+        "2022-11-25 09:30:00":"2022-11-25 10:00:00"
+    ].mean(),
+)
+# after break 10:00-11:00 (26988, 26396)
+print(
+    df3[df3["number"] < 1e6]["number"][
+        "2022-11-25 10:00:00":"2022-11-25 11:00:00"
+    ].mean(),
+    df4[df4["number"] < 1e6]["number"][
+        "2022-11-25 10:00:00":"2022-11-25 11:00:00"
+    ].mean(),
+)
+# before the break 9:00-9:30 (df3: 13723, df4: 14115)
+print(
+    df3[df3["number"] < 1e6]["number"][
+        "2022-11-25 9:00:00":"2022-11-25 09:30:00"
+    ].mean(),
+    df4[df4["number"] < 1e6]["number"][
+        "2022-11-25 9:00:00":"2022-11-25 09:30:00"
+    ].mean(),
+)
+#+end_src
+
+#+begin_src python
+# plot around coffee break for both days
+plot.plot_line(
+    [
+        df1["2022-11-24 09:15:00":"2022-11-24 10:15:00"],
+        df2["2022-11-24 09:15:00":"2022-11-24 10:15:00"],
+    ],
+    "mass",
+    xlabel="time",
+    ylabel="PM0.3 (µg/m³)",
+    title="2022-11-24 UFP around coffee break (9:30-10:00)",
+    legend=["sensor1", "sensor2"],
+    datefmt="%H:%M",
+    outfile="2022-11-24_coffeebreak"
+)
+plot.plot_line(
+    [
+        df3["2022-11-25 09:15:00":"2022-11-25 10:15:00"],
+        df4["2022-11-25 09:15:00":"2022-11-25 10:15:00"],
+    ],
+    "mass",
+    xlabel="time",
+    ylabel="PM0.3 (µg/m³)",
+    title="2022-11-25 UFP around coffee break (9:30-10:00)",
+    legend=["sensor1", "sensor2"],
+    datefmt="%H:%M",
+    outliers=(0,0.99),
+    outfile="2022-11-25_coffeebreak"
+)
+#+end_src
+
+#+RESULTS:
+: None
