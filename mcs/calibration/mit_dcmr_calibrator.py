@@ -92,6 +92,7 @@ class MITDCMRCalibrator(object):
         self._plot_results = plot_results
         self._component2model_choices = component2model_choices
         self._has_trained = False
+        self._plot_saver = plot.PlotSaver("calibration")
 
     def _get_trained_model(
         self,
@@ -113,7 +114,7 @@ class MITDCMRCalibrator(object):
                 df.plot.scatter(x=source_x_col, y=y_col)
                 plt.xlabel(source_x_col)
                 plt.ylabel(y_col)
-                # plt.show()
+
         for name, (model, extra_opts) in name2model__estimator_options.items():
             estimator = RegressionEstimator(
                 model=model,
@@ -171,6 +172,9 @@ class MITDCMRCalibrator(object):
             plt.title(
                 f"performance of various models. best model: {best_estimator_name}"
             )
+            self._plot_saver.savefig(
+                f"{y_col}_{best_estimator_name}_predictions"
+            )
 
             y_pred = results_df[f"{best_estimator_name} y_pred"]
             y_test = results_df["y_test"]
@@ -181,12 +185,14 @@ class MITDCMRCalibrator(object):
             data = pd.DataFrame(best_estimator._df_test.copy())
             data["residuals"] = residuals
             sns.pairplot(data=data, y_vars=["residuals"], x_vars=x_cols)
+            self._plot_saver.savefig(
+                f"{y_col}_{best_estimator_name}_residuals"
+            )
 
             # Generate qq of residuals plot for model PLR (PM25) and RF (NO2)
-            plt.figure()
+            plt.figure(figsize=(11, 7))
             sm.qqplot(residuals, line="45", fit=True, dist=stats.norm)
-            plt.show()
-            # pylab.show()
+            self._plot_saver.savefig(f"{y_col}_{best_estimator_name}_qqplot")
 
         return best_estimator
 
@@ -355,12 +361,12 @@ class MITDCMRCalibrator(object):
         ] = self._calibrated_pm25_estimator_10sec.predict(experiment_10sec_df)
         set_inf_and_zero_vals_to_nan(experiment_10sec_df, "pm25_calibrated")
 
-        models = self._calibrated_pm25_estimator_10sec._results["estimator"]
-        df_encoded = self._calibrated_pm25_estimator_10sec._encoder.encode_X(
-            experiment_10sec_df
-        )
-        X = df_encoded[self._calibrated_pm25_estimator_10sec._x_cols].values
-        X = self._calibrated_pm25_estimator_10sec._scaler.transform(X)
+        # models = self._calibrated_pm25_estimator_10sec._results["estimator"]
+        # df_encoded = self._calibrated_pm25_estimator_10sec._encoder.encode_X(
+        #     experiment_10sec_df
+        # )
+        # X = df_encoded[self._calibrated_pm25_estimator_10sec._x_cols].values
+        # X = self._calibrated_pm25_estimator_10sec._scaler.transform(X)
         # for i, model in enumerate(models):
         #     experiment_10sec_df[f"pm25_pred_{i}"] = model.predict(X)
         # experiment_10sec_df[

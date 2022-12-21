@@ -433,6 +433,7 @@ class PlotsGenerator(object):
 
     def generate_plots(self):
         self._plot_saver.rm_existing_plots()
+
         self._generate_infographic_plots()
 
         self._plot_daily(
@@ -454,6 +455,8 @@ class PlotsGenerator(object):
         self._plot_daily_no_agg("pm25_calibrated_nobg")
         self._plot_saver.savefig("pm25_no_aggregation")
 
+        self._plot_sensor_coverage()
+
         self._plot_daily_no_agg(
             "pm25_calibrated_nobg",
             data=self._tensec_df.reset_index(),
@@ -467,19 +470,12 @@ class PlotsGenerator(object):
             "pm25_no_aggregation_for_ams1_weekday_vs_weekend"
         )
 
-        data = (
-            self._mit_df.reset_index(level=0).copy().resample("60min").mean()
+        self._plot_daily(
+            "gas_op2_w",
+            data=self._mit_df.reset_index(),
+            freq="60min",
         )
-        # ggd_no2 = GGDDataLoader().load_all("NO2")['NL49021']
-        # pd.DataFrame({"gas_op2_w": ggd_no2, 'GGD (NL49021)'
-        # data[("gas_op2_w", )] =
-        # self._plot_daily(
-        #     "gas_op2_w",
-        #     data=data.reset_index(),
-        #     freq="60min",
-        #     # secondary_y=("gas_op2_w", "GGD (NL49021)"),
-        # )
-        # self._plot_saver.savefig("daily_raw_no2_signals_during_experiment")
+        self._plot_saver.savefig("daily_raw_no2_signals_during_experiment")
 
         raw_no2_per_2min = (
             self._mit_df.reset_index(level=0)

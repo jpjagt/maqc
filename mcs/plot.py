@@ -1,3 +1,4 @@
+import matplotlib
 from matplotlib import pyplot as plt, dates as mdates
 import itertools
 import numpy as np
@@ -15,6 +16,9 @@ from mcs.constants import (
     END_TIME,
 )
 from mcs.utils import rm_dir_contents, set_timestamp_related_cols
+
+MPL_DPI = 300
+matplotlib.rcParams["savefig.dpi"] = MPL_DPI
 
 amsterdam_geojson = gpd.read_file(
     str(ASSETS_DIR / "amsterdam_neighbourhoods.geojson")
@@ -350,6 +354,10 @@ class AxPrettifier(object):
 
 
 class PlotSaver(object):
+    # extension = "svg"
+    # extension = "png"
+    extension = "jpg"
+
     def __init__(self, name, suffix=None, skip_save=False):
         self._name = name
         self._suffix = suffix
@@ -371,12 +379,12 @@ class PlotSaver(object):
         else:
             if self._suffix:
                 name += self._suffix
-            fname = f"{name}.svg"
+            fname = f"{name}.{self.extension}"
             fpath = self._dir / fname
             fpath.parent.mkdir(exist_ok=True, parents=True)
             print(f"[PlotSaver] saving {fname}")
             plt.tight_layout()
-            plt.savefig(str(fpath), bbox_inches="tight")
+            plt.savefig(str(fpath), bbox_inches="tight", dpi=MPL_DPI)
 
     def rm_existing_plots(self):
         rm_dir_contents(self._dir)
