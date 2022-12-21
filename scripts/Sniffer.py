@@ -13,11 +13,14 @@ print(os.getcwd())
 # maxvalue is maximal value of you the particle you wish to plot. 
 x = '/home/mitch182/code/measuring-construction-sites/data/Sniffer/2022_10_20_snifferbike.maq+321.csv'  
 df = pd.read_csv(x)
-
+print(df)
 #explore large and low values to get indication of time of pollution
 df.nlargest(n=10, columns=['pm10', 'pm1_0', 'pm2_5'])
 df.nsmallest(n=10, columns=['pm10', 'pm1_0', 'pm2_5'])
 
+
+df.nlargest(n=10, columns=['rh'])
+df.nsmallest(n=10, columns=['rh'])
 #set time column to pandas datetime format
 df['time'] =  pd.to_datetime(df['time'])
 
