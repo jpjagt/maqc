@@ -6,7 +6,9 @@ from mcs.data_loaders import GGDDataLoader
 
 
 def compute_weighted_mean_background_level(
-    ggd_df, ggd_station_metadata_df, station_type2weight={}
+    ggd_df,
+    ggd_station_metadata_df,
+    station_type2weight={"achtergrond": 1.0, "industrie": 0.0, "verkeer": 0.3},
 ):
     """
     given background level measurements from multiple GGD stations in ggd_df,
@@ -79,18 +81,29 @@ def subtract_background_level_with_ggd_data(
         result = _subtract(series_or_df)
     else:
         result = series_or_df.apply(_subtract, axis=0)
-    return result
+    return result, rel_weighted_mean
 
 
 def set_cols_without_bg(df, col2component):
     for col, component in col2component.items():
         if col in df:
-            target_name = f"{col}_nobg"
-            if isinstance(df[col], pd.DataFrame):
+
+            def _set_cols(target_name, result):
+                # always set on full index, also if result is a series, because
+                # of consistency with later operations
                 target_name = pd.MultiIndex.from_product(
                     [[target_name], df[col].columns]
                 )
-            df[target_name] = subtract_background_level_with_ggd_data(
-                df[col], component
-            )
+                if isinstance(result, pd.Series):
+                    for target_col in target_name:
+                        df[target_col] = result
+                else:
+                    df[target_name] = result
+
+            (
+                result,
+                rel_weighted_mean,
+            ) = subtract_background_level_with_ggd_data(df[col], component)
+            _set_cols(f"{col}_nobg", result)
+            _set_cols(f"{col}_bg", rel_weighted_mean)
     return df

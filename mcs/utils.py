@@ -71,18 +71,25 @@ def query_yes_no(
 
 
 def set_timestamp_related_cols(df, src_col="timestamp"):
+    timestamp_is_index = "timestamp" not in df and isinstance(
+        df.index, pd.DatetimeIndex
+    )
+
+    if timestamp_is_index:
+        timestamps = df.index.to_series()
+    else:
+        timestamps = df[src_col]
+
     # create date column
-    df["date"] = df["timestamp"].dt.date
+    df["date"] = timestamps.dt.date
     # create day of week column
     cat_type = pd.CategoricalDtype(list(calendar.day_name), ordered=True)
     df["day_of_week"] = pd.Categorical.from_codes(
-        df["timestamp"].dt.day_of_week, dtype=cat_type
+        timestamps.dt.day_of_week, dtype=cat_type
     )
     # create normalized date column
     df["time_of_day"] = pd.to_datetime(
-        DATE_FOR_RELATIVE_TIME_OF_DAY
-        + " "
-        + df["timestamp"].dt.time.astype(str)
+        DATE_FOR_RELATIVE_TIME_OF_DAY + " " + timestamps.dt.time.astype(str)
     )
 
     df["is_weekday"] = (
