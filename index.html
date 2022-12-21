@@ -2,8 +2,10 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Measuring Construction Sites</title>
+    <title>MAQC - a toolkit to Measure Air Quality from Construction</title>
     <!-- <script src="https://cdn.tailwindcss.com"></script> -->
+    <!-- add fitty library from cdn -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fitty/2.3.0/fitty.min.js"></script>
     <link
       href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css"
       rel="stylesheet"
@@ -18,93 +20,249 @@
          </div> -->
 
     <div class="container mx-auto px-4 md:px-18 lg:px-48">
-      <h1
-        id="maqc"
-        class="text-8xl font-bold mb-8 mt-4 text-primary tracking-wider text-center"
-      >
-        MAQC
-      </h1>
-      <h2 class="text-2xl mb-8 text-primary tracking-wide text-center">
+      <div class="relative mb-4 sm:mb-0 mt-4 overflow-hidden">
+        <h1 id="maqc" class="text-primary tracking-wider">MAQC</h1>
+      </div>
+      <h2 class="text-2xl mb-8 sm:mb-16 text-primary tracking-wide text-center">
         a toolkit to facilitate Measuring Air Quality from Construction
       </h2>
       <div class="grid-main">
         <div class="item-0 card card-cream">
           <div class="card-body">
             <p class="text-md leading-loose">
-              We are MADE MSc students at AMS Institute in Amsterdam. In
-              collaboration with the MIT Senseable City Lab, we did a research
-              project, which focused on using low-cost sensors called City
-              Scanners to measure air quality around construction sites.
-              However, we encountered a number of practical hurdles that made it
-              difficult to produce reliable results. As a result, we have
-              created a guideline for other professionals and researchers who
-              want to conduct similar experiments in the future, outlining the
-              challenges we faced and offering suggestions for how to overcome
-              them.
+              We are MADE MSc students at the AMS Institute in Amsterdam. In
+              collaboration with the MIT Senseable City Lab, we experimented
+              with low-cost sensors called City Scanners to measure air quality
+              around construction sites. However, we encountered a number of
+              practical hurdles that made it difficult to produce reliable
+              results. As a result, we have created a guideline for other
+              professionals and researchers who want to conduct similar
+              experiments in the future, outlining the challenges we faced and
+              offering suggestions for how to overcome them.
             </p>
           </div>
         </div>
 
-        <a href="#">
-          <div class="item-1 card card-button h-full w-full">
-            <h4 class="text-xl font-bold">Our guidebook</h4>
+        <a href="MAQC-guidebook.pdf" target="_blank">
+          <div
+            class="item-1 card card-button flex items-center justify-between h-full w-full main-cta-button"
+          >
+            <h4 class="text-sm sm:text-lg md:text-xl font-bold">
+              Our guidebook
+            </h4>
+
+            <h4 class="text-3xl font-bold arrow">→</h4>
           </div>
         </a>
 
-        <a href="https://github.com/jpjagt/maqc">
-          <div class="item-1 card card-button h-full w-full">
-            <h4 class="text-xl font-bold">Our code</h4>
+        <a href="https://github.com/jpjagt/maqc" target="_blank">
+          <div
+            class="item-1 card card-button flex items-center justify-between h-full w-full main-cta-button"
+          >
+            <h4 class="text-sm sm:text-lg md:text-xl font-bold">Our code</h4>
+
+            <h4 class="text-3xl font-bold arrow">→</h4>
           </div>
         </a>
       </div>
 
-      <div class="h-40"></div>
+      <div class="h-8 md:h-20"></div>
 
-      <h2 class="text-3xl mb-16 text-primary tracking-wide text-center">
+      <h5 class="text-lg text-primary text-center">
+        read on<br />
+        <span class="animate-bounce inline-block">⇣</span>
+      </h5>
+
+      <div class="h-16 md:h-40"></div>
+
+      <h2 class="text-3xl mb-10 text-primary tracking-wide text-center">
         Why measure air quality?
       </h2>
 
-      <div class="grid-why">
-        <div class="item-0 pr-24">
-          <h3 class="text-xl mb-3 text-primary">
-            “Meten is weten” (To measure is to know)
-          </h3>
+      <div class="flex justify-center mb-4 sm:mb-10">
+        <div class="why-picker-container">
+          <div class="why-picker-option active" id="why-construction-companies">
+            Construction companies
+          </div>
+          <div class="why-picker-option" id="why-policymakers">
+            Policymakers
+          </div>
+        </div>
+      </div>
 
-          <p class="mb-9">
-            Construction companies are increasingly aware of their social
-            responsibility as well as economic incentives to minimize
-            pollutants. However, prioritizing interventions when investment
-            costs are high can be difficult. Implementing low-cost sensors
-            on-site or on your machinery could inform sustainable investment
-            decisions.
-          </p>
+      <div id="why-content" class="mb-16 bg-bg-dark card">
+        <div class="grid-why" data-why-content="why-construction-companies">
+          <div class="item-0 md:pr-24">
+            <h3 class="text-xl mb-3 text-primary">
+              “Meten is weten” (measuring = knowing)
+            </h3>
 
-          <h3 class="text-xl mb-3 text-primary">Healthy work environment</h3>
+            <p class="mb-9">
+              Construction companies are increasingly aware of their social
+              responsibility as well as economic incentives to minimize
+              pollutants. However, prioritizing interventions when investment
+              costs are high can be difficult. Implementing low-cost sensors
+              on-site or on your machinery could inform sustainable investment
+              decisions.
+            </p>
 
-          <p class="mb-9">
-            Creating a healthy work environment for construction workers is
-            important. Measuring on-site, and especially on-person, allows
-            workers to measure their direct exposure to pollutants. This
-            information can be used to improve the working conditions.
-          </p>
+            <h3 class="text-xl mb-3 text-primary">Healthy work environment</h3>
 
-          <h3 class="text-xl mb-3 text-primary">
-            Competitive advantage in tenders
-          </h3>
+            <p class="mb-9">
+              Creating a healthy work environment for construction workers is
+              important. Measuring on-site, and especially on-person, allows
+              workers to measure their direct exposure to pollutants. This
+              information can be used to improve the working conditions.
+            </p>
 
-          <p>
-            There is increasing attention to sustainability measurements in the
-            construction sector from the government and the media. Therefore, if
-            you can demonstrate that you apply sustainable building practices,
-            it will give you a comparative advantage over other contractors in
-            tender processes.
-          </p>
+            <h3 class="text-xl mb-3 text-primary">
+              Competitive advantage in tenders
+            </h3>
+
+            <p>
+              There is increasing attention to sustainability measurements in
+              the construction sector from the government and the media.
+              Therefore, if you can demonstrate that you apply sustainable
+              building practices, it will give you a comparative advantage over
+              other contractors in tender processes.
+            </p>
+          </div>
+
+          <div class="item-1 card bg-image-exhaust"></div>
         </div>
 
-        <div class="item-1 card bg-image-exhaust"></div>
+        <div class="grid-why hidden" data-why-content="why-policymakers">
+          <div class="item-0 md:pr-24">
+            <h3 class="text-xl mb-3 text-primary">Some policy benefits</h3>
+
+            <p class="mb-9">blabla</p>
+          </div>
+
+          <div class="item-1 card bg-policy-making"></div>
+        </div>
+      </div>
+
+      <div class="h-8 md:h-26"></div>
+
+      <h2 class="text-3xl mb-10 text-primary tracking-wide text-center">
+        What is the MAQC toolkit?
+      </h2>
+
+      <div class="max-w-2xl mx-auto">
+        <p class="text-md leading-loose">
+          We developed the MAQC (“maxi”) toolkit was developed over the course
+          of our research project, with the intent to make it easier for other
+          researchers and professionals measure air quality around construction
+          sites. The toolkit consists of two things: a guidebook and a code
+          repository. The guidebook is a document with seven chapters, each
+          containing tips for one step in the measurement process. The code
+          repository contains functions and classes we used for data processing.
+        </p>
+
+        <p class="mt-4 text-md leading-loose">
+          Curious? Check out the guidebook
+          <a class="link" href="MAQC-guidebook.pdf" target="_blank">here</a>.
+        </p>
+      </div>
+
+      <div class="h-16 sm:h-32"></div>
+
+      <div class="footer">
+        <div class="footer-hline"></div>
+
+        <div class="h-8"></div>
+
+        <h3 class="text-center text-primary">
+          MAQC &mdash; a toolkit to facilitate Measuring Air Quality from
+          Construction
+        </h3>
+
+        <div class="h-8 md:h-20"></div>
+
+        <div class="sm:flex items-stretch px-4 sm:px-8 md:px-26 lg:px-32">
+          <div class="mb-12 sm:mb-0">
+            <h4 class="mb-4 text-primary">Links</h4>
+
+            <div class="footer-list">
+              <p>
+                <a class="link" href="MAQC-guidebook.pdf" target="_blank"
+                  >Guidebook</a
+                >
+              </p>
+              <p>
+                <a
+                  class="link"
+                  href="https://github.com/jpjagt/maqc"
+                  target="_blank"
+                  >Our code</a
+                >
+              </p>
+              <p>
+                <a
+                  class="link"
+                  href="https://senseableamsterdam.mit.edu"
+                  target="_blank"
+                  >MIT Senseable Amsterdam Lab</a
+                >
+              </p>
+            </div>
+          </div>
+
+          <div class="flex-1"></div>
+
+          <div class="mb-12 sm:mb-0">
+            <h4 class="mb-4 text-primary">A project by</h4>
+
+            <div class="footer-list">
+              <p>Jonas van der Ham</p>
+              <p>July Jagt</p>
+              <p>Lanie Preston</p>
+              <p>Abhiramini Rajiv</p>
+              <p>Michiel Selm</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="h-8 sm:h-16"></div>
+        <p class="text-sm text-center text-primary">
+          Made with much ♥ in Amsterdam in 2022
+        </p>
+
+        <div class="h-16 md:h-26"></div>
       </div>
     </div>
-
-    <div class="h-72"></div>
   </body>
+
+  <script>
+    const setupWhyOptions = () => {
+      const whyPickerOptions = document.querySelectorAll('.why-picker-option')
+      const whyContent = document.querySelector('#why-content')
+
+      whyPickerOptions.forEach((option) => {
+        option.addEventListener('click', () => {
+          const whyContentToShow = whyContent.querySelector(
+            `[data-why-content=${option.id}]`
+          )
+
+          whyPickerOptions.forEach((option) => {
+            option.classList.remove('active')
+          })
+
+          option.classList.add('active')
+
+          whyContent.querySelectorAll('.grid-why').forEach((grid) => {
+            grid.classList.add('hidden')
+          })
+
+          whyContentToShow.classList.remove('hidden')
+        })
+      })
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      setupWhyOptions()
+      console.log('fitty')
+      window.fitty('#maqc')
+    })
+  </script>
 </html>
